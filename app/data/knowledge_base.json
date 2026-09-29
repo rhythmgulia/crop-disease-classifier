@@ -1,0 +1,90 @@
+[
+  {
+    "disease_class": "Tomato___Late_blight",
+    "crop": "Tomato",
+    "condition": "Late Blight",
+    "category": "Fruit",
+    "pathogen_type": "Oomycete (Phytophthora infestans)",
+    "symptoms": "Large, irregular greenish-gray water-soaked lesions on leaves and stems that rapidly turn brown and papery. White fungal growth appears on leaf undersides in humid conditions. Fruits develop dark, firm, greasy-looking lesions.",
+    "spread_mechanism": "Wind-borne sporangia and splashing rain; thrives in cool, wet conditions (temperatures between 15-22°C and relative humidity above 90%).",
+    "treatment_options": "Apply preventive copper-based fungicides or mancozeb before disease onset. Remove and destroy all infected foliage immediately. Improve canopy airflow by pruning and stake plants. Avoid overhead irrigation.",
+    "safety_notes": "Tomatoes showing minor late blight foliage symptoms bear fruit that is technically non-toxic if undamaged, but diseased fruit tissue rots rapidly, tastes bitter, and often harbors secondary bacterial rot. Discard visibly affected fruit; healthy-looking fruit from affected plants is safe after thorough washing."
+  },
+  {
+    "disease_class": "Tomato___Early_blight",
+    "crop": "Tomato",
+    "condition": "Early Blight",
+    "category": "Fruit",
+    "pathogen_type": "Fungus (Alternaria solani)",
+    "symptoms": "Dark brown to black spots with characteristic concentric rings creating a 'target board' pattern, typically starting on older lower leaves. Leaves yellow and drop prematurely.",
+    "spread_mechanism": "Survives in crop debris and soil; spread by rain splash, wind, and equipment under warm, humid weather (24-29°C).",
+    "treatment_options": "Rotate crops on a 3-year cycle. Apply chlorothalonil or copper fungicides at first sign. Mulch around plant base to prevent soil splash onto lower leaves.",
+    "safety_notes": "Early blight is a plant pathogen and does not infect humans. Fruits with minor surface lesions can have the blemish excised and the remainder consumed safely."
+  },
+  {
+    "disease_class": "Potato___Late_blight",
+    "crop": "Potato",
+    "condition": "Late Blight",
+    "category": "Plant",
+    "pathogen_type": "Oomycete (Phytophthora infestans)",
+    "symptoms": "Dark brown to purplish-black water-soaked lesions on foliage. White downy sporulation on the underside of leaves during morning dew. Tubers develop dry, granular brown rot penetrating into the flesh.",
+    "spread_mechanism": "Cull piles, infected seed tubers, and windborne spores traveling miles in moist cloudy weather.",
+    "treatment_options": "Use certified disease-free seed tubers. Apply systemic fungicides (metalaxyl/mefenoxam or cyazofamid). Kill potato vines 2 weeks prior to harvest to prevent tuber infection.",
+    "safety_notes": "Do not consume potato tubers affected by late blight dry rot or secondary soft rots. The pathogen produces toxins and makes tubers unpalatable and susceptible to bacterial toxins."
+  },
+  {
+    "disease_class": "Apple___Apple_scab",
+    "crop": "Apple",
+    "condition": "Apple Scab",
+    "category": "Fruit",
+    "pathogen_type": "Fungus (Venturia inaequalis)",
+    "symptoms": "Olive-green, velvety spots on leaves that turn brown and corky. Fruit lesions become dark, scabby, cracked, and distorted as the fruit grows.",
+    "spread_mechanism": "Overwinters in fallen leaves on the orchard floor; ascospores discharge during spring rains when temperatures range from 16-24°C.",
+    "treatment_options": "Shred or clear fallen leaf litter in autumn. Apply captan, mancozeb, or sulfur sprays starting at green tip stage through petal fall.",
+    "safety_notes": "Scabby apples are completely safe to eat. The scab fungus produces no human mycotoxins. The fruit skin can be peeled or cut away for aesthetic preference."
+  },
+  {
+    "disease_class": "Apple___Black_rot",
+    "crop": "Apple",
+    "condition": "Black Rot",
+    "category": "Fruit",
+    "pathogen_type": "Fungus (Botryosphaeria obtusa)",
+    "symptoms": "Frogeye leaf spots with purple margins and light brown centers. Fruit develops a firm brown rot with alternating dark and light concentric rings, eventually shriveling into black mummies.",
+    "spread_mechanism": "Overwinters in mummified fruit, dead wood, and bark cankers; conidia splash during rainfall.",
+    "treatment_options": "Prune out dead wood and remove mummified fruit from trees during winter dormancy. Apply thiophanate-methyl or captan fungicide.",
+    "safety_notes": "Mummified or rotting fruit should not be consumed due to unpleasant flavor and risk of opportunistic mold toxins. Clean parts of lightly affected fruit may be used if well trimmed."
+  },
+  {
+    "disease_class": "Grape___Black_rot",
+    "crop": "Grape",
+    "condition": "Black Rot",
+    "category": "Fruit",
+    "pathogen_type": "Fungus (Guignardia bidwellii)",
+    "symptoms": "Small reddish-brown circular spots on leaves. Infected berries turn light brown, soften, and rapidly shrivel into hard, black, wrinkled mummies studded with pycnidia.",
+    "spread_mechanism": "Ascospores and pycnidiospores ejected during warm rainy periods (21-27°C).",
+    "treatment_options": "Apply myclobutanil or mancozeb fungicides from early shoot growth through 4 weeks post-bloom. Prune canopy for sunlight penetration and airflow.",
+    "safety_notes": "Black rot shriveled grapes are dried and inedible. Berries unaffected on the same cluster remain safe to harvest and consume."
+  },
+  {
+    "disease_class": "Tomato___healthy",
+    "crop": "Tomato",
+    "condition": "Healthy",
+    "category": "Fruit",
+    "pathogen_type": "None",
+    "symptoms": "Vibrant uniform green foliage, sturdy stems, and smooth fruit surface without lesions, spots, or abnormal curling.",
+    "spread_mechanism": "N/A",
+    "treatment_options": "Maintain consistent drip irrigation, balanced nitrogen/potassium fertilization, and regular preventative scouting.",
+    "safety_notes": "Crop is healthy and fully safe for human and animal consumption."
+  },
+  {
+    "disease_class": "Potato___healthy",
+    "crop": "Potato",
+    "condition": "Healthy",
+    "category": "Plant",
+    "pathogen_type": "None",
+    "symptoms": "Broad, green, healthy foliage without chlorosis, necroses, or curled leaf margins.",
+    "spread_mechanism": "N/A",
+    "treatment_options": "Continue standard hill mounding, balanced irrigation, and pest monitoring.",
+    "safety_notes": "Tubers from healthy plants are completely safe to consume."
+  }
+]
