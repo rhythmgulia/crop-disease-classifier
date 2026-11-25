@@ -57,7 +57,7 @@ from backend.app.ml.severity import estimate_severity
 from backend.app.ml.risk_engine import compute_outbreak_risk, WeatherObservation, HistoricalScanSummary
 
 # Paths
-BASE_DIR = Path(__file__).resolve().parent.parent.paren
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 CHECKPOINT_PATH = DATA_DIR / "checkpoints" / "best_model.pth"
 CLASSES_PATH = DATA_DIR / "splits" / "classes.json"
@@ -75,7 +75,7 @@ try:
     Base.metadata.create_all(bind=engine)
     # create_all does not alter tables created by earlier app versions.
     if engine.dialect.name == "sqlite":
-        from sqlalchemy import inspect, tex
+        from sqlalchemy import inspect, text
         with engine.begin() as conn:
             tables = inspect(engine).get_table_names()
             if "users" in tables:
@@ -187,7 +187,7 @@ EVAL_TRANSFORMS = transforms.Compose([
 SCANS_CACHE = {}
 
 
-# Helper function to classify fruit vs plan
+# Helper function to classify fruit vs plant
 def get_crop_and_category(class_name: str):
     crop = class_name.split("___")[0]
     fruit_crops = {"Apple", "Cherry_(including_sour)", "Grape", "Orange", "Peach", "Pepper,_bell", "Strawberry", "Tomato"}
@@ -294,7 +294,7 @@ async def predict_crop_disease(file: UploadFile = File(...), db=Depends(get_db),
         cibrc_approved_pesticides=cibrc_pesticides,
         recommended_dosage=recommended_dosage,
         phi_waiting_period_days=phi_days,
-        bio_alternative=bio_al
+        bio_alternative=bio_alt
     )
 
     response_payload = PredictResponse(
@@ -399,7 +399,7 @@ def agronomist_reviews(db=Depends(get_db), user: User = Depends(require_role("ag
         item["farmer_name"] = row.owner.display_name if row.owner else "Farmer"
         item["farmer_email"] = row.owner.email if row.owner else ""
         result.append(item)
-    return resul
+    return result
 
 
 def record_scan_review(scan_id: str, decision: str, db, user: User):
@@ -494,7 +494,7 @@ def detect_disease_class_from_query(query: str, default_class: str = "Tomato___L
         crop_raw, cond_raw = cls.split("___", 1)
         cond_clean = cond_raw.lower().replace("_", " ")
         if len(cond_clean) >= 4 and cond_clean in q_norm:
-            # If current crop context matches, prioritize i
+            # If current crop context matches, prioritize it
             if default_class and default_class.split("___")[0].lower() in crop_raw.lower():
                 return cls
             score = len(cond_clean)
@@ -547,7 +547,7 @@ async def ask_scan_question(scan_id: str, req: ScanQuestionRequest):
     if scan:
         initial_context = scan.get("predicted_class", "Tomato___Late_blight")
     elif req.crop_disease_context:
-        initial_context = req.crop_disease_contex
+        initial_context = req.crop_disease_context
     else:
         initial_context = "Tomato___Late_blight"
 

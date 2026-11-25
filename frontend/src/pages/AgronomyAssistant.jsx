@@ -98,7 +98,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
     catch { return {}; }
   });
   const contextClass = typeof initialContext === 'string'
-    ? initialContex
+    ? initialContext
     : initialContext?.disease_class || initialContext?.predicted_class || null;
 
   const [selectedClass, setSelectedClass] = useState(
@@ -186,7 +186,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
-  // Load languages & Sarvam voice capability on moun
+  // Load languages & Sarvam voice capability on mount
   useEffect(() => {
     async function loadMetadata() {
       try {
@@ -217,7 +217,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
     scrollToBottom();
   }, [messages, isTyping, isRecording, isTranscribing, isClassifyingImage]);
 
-  // Clean up audio playback on unmoun
+  // Clean up audio playback on unmount
   useEffect(() => {
     return () => {
       if (audioPlayerRef.current) {
@@ -400,7 +400,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
       recordingTimerRef.current = setInterval(() => {
         setRecordingSeconds((prev) => {
           if (prev >= 29) {
-            // Sarvam Saaras 30s limi
+            // Sarvam Saaras 30s limit
             stopRecording();
             return 30;
           }
@@ -513,7 +513,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
     let activeScanId = scanId;
     let diagnosisResult = null;
 
-    // Step A: If an image is attached, invoke EfficientNet-B0 classifier firs
+    // Step A: If an image is attached, invoke EfficientNet-B0 classifier first
     if (hasImage && fileToUpload) {
       setIsClassifyingImage(true);
       try {
@@ -567,7 +567,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
 
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // If autoPlayVoice is enabled and audio is present, play i
+      // If autoPlayVoice is enabled and audio is present, play it
       if (autoPlayVoice && response.audio_base64) {
         playAudioBase64(response.audio_base64, assistantMessageId);
       }
@@ -779,7 +779,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
                 >
                   {/* Avatar */}
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                    isAssistan
+                    isAssistant
                       ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                       : 'bg-emerald-600 text-white'
                   }`}>
@@ -789,7 +789,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
                   {/* Bubble Content */}
                   <div className="space-y-1 w-full">
                     <div className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
-                      isAssistan
+                      isAssistant
                         ? isDark
                           ? 'bg-[#101713] border border-[#1F2E25] text-[#F5F7F5]'
                           : 'bg-slate-100 text-slate-800 border border-slate-200'
@@ -1067,7 +1067,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
               className="flex items-center gap-2"
             >
               {/* Image Upload Button */}
-              <inpu
+              <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleImageFileChange}
@@ -1091,7 +1091,7 @@ export default function AgronomyAssistant({ initialScan = null, initialContext =
               </button>
 
               {/* Text Input */}
-              <inpu
+              <input
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}

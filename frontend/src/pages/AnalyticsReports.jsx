@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
   TrendingUp,
   Activity,
-  FileTex
+  FileText
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -237,7 +237,7 @@ export default function AnalyticsReports() {
           <div className="mb-4">
             <h3 className="text-sm font-bold tracking-tight">Test Set Health Ratio</h3>
             <p className={`text-xs ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
-              Healthy vs. Infected proportions in test spli
+              Healthy vs. Infected proportions in test split
             </p>
           </div>
 

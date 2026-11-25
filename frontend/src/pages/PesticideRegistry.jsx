@@ -232,7 +232,7 @@ export default function PesticideRegistry({ onSelectForAssistant }) {
             <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 ${
               isDark ? 'text-[#929C95]' : 'text-slate-400'
             }`} />
-            <inpu
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -250,7 +250,7 @@ export default function PesticideRegistry({ onSelectForAssistant }) {
             <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
               Crop:
             </span>
-            <selec
+            <select
               value={selectedCrop}
               onChange={(e) => setSelectedCrop(e.target.value)}
               className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${
@@ -270,7 +270,7 @@ export default function PesticideRegistry({ onSelectForAssistant }) {
             <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
               Pathogen:
             </span>
-            <selec
+            <select
               value={selectedPathogen}
               onChange={(e) => setSelectedPathogen(e.target.value)}
               className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${
@@ -290,7 +290,7 @@ export default function PesticideRegistry({ onSelectForAssistant }) {
             <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
               PHI:
             </span>
-            <selec
+            <select
               value={selectedPhi}
               onChange={(e) => setSelectedPhi(e.target.value)}
               className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${

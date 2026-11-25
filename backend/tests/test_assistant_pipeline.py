@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image
 
 # Ensure project root is in sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent.paren
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from backend.app.core.sarvam import (
@@ -25,7 +25,7 @@ from backend.app.core.sarvam import (
     encode_multipart_formdata,
     clean_audio_mime_type
 )
-from backend.app.schemas.scan_schemas import ScanQuestionReques
+from backend.app.schemas.scan_schemas import ScanQuestionRequest
 from backend.app.main import (
     get_supported_languages,
     voice_status,
@@ -106,7 +106,7 @@ async def test_grounded_rag_english():
     req_switch = ScanQuestionRequest(
         question="Tell me about tomato early blight.",
         language_code="en-IN",
-        crop_disease_context="Tomato___Late_blight"  # Intentionally pass Late Blight contex
+        crop_disease_context="Tomato___Late_blight"  # Intentionally pass Late Blight context
     )
     res_switch = await ask_scan_question("test-scan-1", req_switch)
     assert res_switch.detected_disease_class == "Tomato___Early_blight", f"Expected Tomato___Early_blight, got {res_switch.detected_disease_class}"

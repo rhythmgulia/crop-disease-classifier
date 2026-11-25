@@ -192,7 +192,7 @@ export default function DiseaseScanner({ onDiagnosisComplete, preloadedDiagnosis
     }
   };
 
-  // Generate VLM Grounded Repor
+  // Generate VLM Grounded Report
   const handleGenerateReport = async () => {
     if (!diagnosis) return;
     setLoadingReport(true);
@@ -280,7 +280,7 @@ export default function DiseaseScanner({ onDiagnosisComplete, preloadedDiagnosis
                   <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                   <div className="absolute inset-0 border-2 border-dashed border-emerald-400/50 rounded-2xl pointer-events-none m-6"></div>
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-mono px-2.5 py-1 rounded-full bg-black/70 text-emerald-400 backdrop-blur-md">
-                    Align leaf inside targe
+                    Align leaf inside target
                   </div>
                 </div>
 
@@ -374,7 +374,7 @@ export default function DiseaseScanner({ onDiagnosisComplete, preloadedDiagnosis
                   </button>
                 </div>
 
-                <inpu
+                <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/jpg"
@@ -556,7 +556,7 @@ export default function DiseaseScanner({ onDiagnosisComplete, preloadedDiagnosis
                     <Sliders className="w-3.5 h-3.5 text-emerald-400" />
                     Heatmap Intensity:
                   </span>
-                  <inpu
+                  <input
                     type="range"
                     min="0.2"
                     max="1.0"
@@ -657,7 +657,7 @@ export default function DiseaseScanner({ onDiagnosisComplete, preloadedDiagnosis
                     Waiting Period (PHI)
                   </span>
                   <span className="font-bold text-inherit mt-0.5 block text-sm">
-                    {diagnosis.treatment?.phi_waiting_period_days ?? 14} Days before Harves
+                    {diagnosis.treatment?.phi_waiting_period_days ?? 14} Days before Harvest
                   </span>
                 </div>
               </div>

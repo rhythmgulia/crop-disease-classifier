@@ -211,7 +211,7 @@ export default function Result({ diagnosis, onNewScan }) {
                   <span>Heatmap Intensity: {Math.round(camOpacity * 100)}%</span>
                   <span>Full CAM</span>
                 </div>
-                <inpu
+                <input
                   type="range"
                   min="0.1"
                   max="1.0"
@@ -236,7 +236,7 @@ export default function Result({ diagnosis, onNewScan }) {
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
               <Sparkles className="w-4 h-4 text-emerald-600" />
-              Agronomist AI Diagnosis Repor
+              Agronomist AI Diagnosis Report
               <span className="text-[11px] font-normal text-slate-400 font-mono">(Grounded VLM)</span>
             </div>
 
@@ -427,7 +427,7 @@ export default function Result({ diagnosis, onNewScan }) {
 
             {/* Input Bar */}
             <form onSubmit={handleSendQuestion} className="flex gap-2">
-              <inpu
+              <input
                 type="text"
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}

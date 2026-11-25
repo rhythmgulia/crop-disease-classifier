@@ -9,7 +9,7 @@ import ssl
 import json
 import uuid
 import logging
-import urllib.reques
+import urllib.request
 import urllib.error
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -22,7 +22,7 @@ for _ca_path in ["/etc/ssl/cert.pem", "/private/etc/ssl/cert.pem"]:
         os.environ["SSL_CERT_FILE"] = _ca_path
         break
 
-# Auto-load .env file if presen
+# Auto-load .env file if present
 def _load_dotenv_if_exists():
     potential_paths = [
         Path.cwd() / ".env",
@@ -195,7 +195,7 @@ def translate_chunk(text: str, source_language_code: str, target_language_code: 
     api_key = get_sarvam_api_key()
     if not api_key:
         logger.warning("SARVAM_API_KEY not configured; returning untranslated text.")
-        return tex
+        return text
 
     payload = {
         "input": text,
@@ -222,10 +222,10 @@ def translate_chunk(text: str, source_language_code: str, target_language_code: 
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8", errors="ignore")
         logger.error(f"Sarvam translation HTTP error {e.code}: {err_body}")
-        return tex
+        return text
     except Exception as e:
         logger.error(f"Sarvam translation network exception: {e}")
-        return tex
+        return text
 
 
 def translate_text(text: str, source_language_code: str, target_language_code: str, mode: str = "formal") -> str:
@@ -234,10 +234,10 @@ def translate_text(text: str, source_language_code: str, target_language_code: s
     Handles chunking if text length exceeds 900 characters for Mayura v1.
     """
     if not text or not text.strip():
-        return tex
+        return text
 
     if source_language_code == target_language_code:
-        return tex
+        return text
 
     # Mayura limit is 1,000 characters per request; split by sentences or paragraphs if needed
     if len(text) <= 900:

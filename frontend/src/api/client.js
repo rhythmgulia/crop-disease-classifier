@@ -254,7 +254,7 @@ export const synthesizeSpeech = async (text, languageCode = 'en-IN', speaker = n
 };
 
 /**
- * Detect crop or disease from query string to automatically switch contex
+ * Detect crop or disease from query string to automatically switch context
  */
 export const detectDiseaseClassFromQuery = (query, currentClass = "Tomato___Late_blight") => {
   const qNorm = (query || "").toLowerCase().replace(/[-_]/g, " ");
@@ -286,7 +286,7 @@ export const detectDiseaseClassFromQuery = (query, currentClass = "Tomato___Late
 };
 
 /**
- * Ask a question regarding a specific disease scan with multilingual suppor
+ * Ask a question regarding a specific disease scan with multilingual support
  */
 export const askScanQuestion = async (scanId, question, diseaseClass, languageCode = 'en-IN', synthesizeAudio = false) => {
   try {
