@@ -42,7 +42,7 @@ from backend.app.schemas.scan_schemas import (
     TranscribeResponse,
     SynthesizeRequest,
     SynthesizeResponse,
-    SignupRequest, LoginReques
+    SignupRequest, LoginRequest
 )
 from backend.app.core.sarvam import (
     SUPPORTED_LANGUAGES,
