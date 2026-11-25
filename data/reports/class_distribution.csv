@@ -1,0 +1,39 @@
+class_name,crop,condition,category,is_healthy,count
+Orange___Haunglongbing_(Citrus_greening),Orange,Haunglongbing_(Citrus_greening),Fruit,False,5507
+Tomato___Tomato_Yellow_Leaf_Curl_Virus,Tomato,Tomato_Yellow_Leaf_Curl_Virus,Fruit,False,5357
+Soybean___healthy,Soybean,healthy,Plant (Field/Cereal/Vegetable),True,5090
+Peach___Bacterial_spot,Peach,Bacterial_spot,Fruit,False,2297
+Tomato___Bacterial_spot,Tomato,Bacterial_spot,Fruit,False,2127
+Tomato___Late_blight,Tomato,Late_blight,Fruit,False,1909
+Squash___Powdery_mildew,Squash,Powdery_mildew,Plant (Field/Cereal/Vegetable),False,1835
+Tomato___Septoria_leaf_spot,Tomato,Septoria_leaf_spot,Fruit,False,1771
+Tomato___Spider_mites Two-spotted_spider_mite,Tomato,Spider_mites Two-spotted_spider_mite,Fruit,False,1676
+Apple___healthy,Apple,healthy,Fruit,True,1645
+Tomato___healthy,Tomato,healthy,Fruit,True,1591
+Blueberry___healthy,Blueberry,healthy,Plant (Field/Cereal/Vegetable),True,1502
+"Pepper,_bell___healthy","Pepper,_bell",healthy,Fruit,True,1478
+Tomato___Target_Spot,Tomato,Target_Spot,Fruit,False,1404
+Grape___Esca_(Black_Measles),Grape,Esca_(Black_Measles),Fruit,False,1383
+Corn_(maize)___Common_rust_,Corn_(maize),Common_rust_,Plant (Field/Cereal/Vegetable),False,1192
+Grape___Black_rot,Grape,Black_rot,Fruit,False,1180
+Corn_(maize)___healthy,Corn_(maize),healthy,Plant (Field/Cereal/Vegetable),True,1162
+Strawberry___Leaf_scorch,Strawberry,Leaf_scorch,Fruit,False,1109
+Grape___Leaf_blight_(Isariopsis_Leaf_Spot),Grape,Leaf_blight_(Isariopsis_Leaf_Spot),Fruit,False,1076
+Cherry_(including_sour)___Powdery_mildew,Cherry_(including_sour),Powdery_mildew,Fruit,False,1052
+Potato___Early_blight,Potato,Early_blight,Plant (Field/Cereal/Vegetable),False,1000
+Potato___Late_blight,Potato,Late_blight,Plant (Field/Cereal/Vegetable),False,1000
+Tomato___Early_blight,Tomato,Early_blight,Fruit,False,1000
+"Pepper,_bell___Bacterial_spot","Pepper,_bell",Bacterial_spot,Fruit,False,997
+Corn_(maize)___Northern_Leaf_Blight,Corn_(maize),Northern_Leaf_Blight,Plant (Field/Cereal/Vegetable),False,985
+Tomato___Leaf_Mold,Tomato,Leaf_Mold,Fruit,False,952
+Cherry_(including_sour)___healthy,Cherry_(including_sour),healthy,Fruit,True,854
+Apple___Apple_scab,Apple,Apple_scab,Fruit,False,630
+Apple___Black_rot,Apple,Black_rot,Fruit,False,621
+Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,Corn_(maize),Cercospora_leaf_spot Gray_leaf_spot,Plant (Field/Cereal/Vegetable),False,513
+Strawberry___healthy,Strawberry,healthy,Fruit,True,456
+Grape___healthy,Grape,healthy,Fruit,True,423
+Tomato___Tomato_mosaic_virus,Tomato,Tomato_mosaic_virus,Fruit,False,373
+Raspberry___healthy,Raspberry,healthy,Plant (Field/Cereal/Vegetable),True,371
+Peach___healthy,Peach,healthy,Fruit,True,360
+Apple___Cedar_apple_rust,Apple,Cedar_apple_rust,Fruit,False,275
+Potato___healthy,Potato,healthy,Plant (Field/Cereal/Vegetable),True,152

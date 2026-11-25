@@ -1,0 +1,18 @@
+{
+  "total_classes": 38,
+  "total_images": 54305,
+  "corrupt_images_checked": 0,
+  "image_resolutions_observed": [
+    [
+      256,
+      256
+    ]
+  ],
+  "min_class_count": 152,
+  "max_class_count": 5507,
+  "median_class_count": 1092.5,
+  "fruit_classes_count": 27,
+  "plant_classes_count": 11,
+  "healthy_classes_count": 12,
+  "disease_classes_count": 26
+}

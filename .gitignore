@@ -1,0 +1,109 @@
+# ==========================================
+# Crop Disease Classifier & Monitoring System
+# Root .gitignore
+# ==========================================
+
+# --- Virtual Environments & Python ---
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Large Datasets & Media (CRITICAL) ---
+# Never commit raw datasets (54,000+ images)
+data/raw/
+data/raw/*
+temp_pv/
+temp_plantvillage_git/
+*.tar.gz
+*.zip
+
+# --- Model Checkpoints (Heavy Binaries > 20MB) ---
+data/checkpoints/*.pth
+data/checkpoints/*.pt
+data/checkpoints/*.onnx
+!data/checkpoints/.gitkeep
+
+# Note: We DO track data/splits/ and data/reports/ for reproducibility:
+# data/splits/*.csv
+# data/splits/classes.json
+# data/reports/*.csv
+# data/reports/*.json
+
+# --- Frontend & Node.js ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Environment Variables & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+
+# --- Databases, Logs & Generated Media ---
+*.sqlite
+*.sqlite3
+*.db
+*.log
+*.log.*
+backend/app/static/gradcam/*.jpg
+backend/app/static/gradcam/*.png
+!backend/app/static/gradcam/.gitkeep
+backend/app/static/scans/*
+!backend/app/static/scans/.gitkeep
+
+# --- Operating System (macOS & Windows) ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# --- System Generated & Scratch ---
+.system_generated/
+scratch/
