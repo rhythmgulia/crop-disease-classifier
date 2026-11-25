@@ -1,1 +1,382 @@
-import axios from 'axios';\n\n// API Base URL configured via Vite environment variable, defaults to empty string for proxying to /api\nconst baseURL = import.meta.env.VITE_API_URL || '';\nconst assetUrl = (path) => path && baseURL ? new URL(path, baseURL).toString() : path;\n\nexport const api = axios.create({\n  baseURL: baseURL,\n  timeout: 20000,\n});\n\napi.interceptors.request.use((config) => {\n  const token = localStorage.getItem('agrovision_token');\n  if (token) config.headers.Authorization = `Bearer ${token}`;\n  return config;\n});\n\nexport const signIn = async (credentials) => (await api.post('/api/auth/login', credentials)).data;\nexport const signUp = async (details) => (await api.post('/api/auth/signup', details)).data;\nexport const getCurrentUser = async () => (await api.get('/api/auth/me')).data;\nexport const getMyScans = async () => (await api.get('/api/farmer/scans')).data.map(scan => ({ ...scan, image_url: assetUrl(scan.image_url), gradcam_url: assetUrl(scan.gradcam_url) }));\nexport const getPendingReviews = async () => (await api.get('/api/agronomist/reviews')).data.map(scan => ({ ...scan, image_url: assetUrl(scan.image_url), gradcam_url: assetUrl(scan.gradcam_url) }));\nexport const approveDiagnosis = async (scanId) => (await api.post(`/api/agronomist/reviews/${scanId}/approve`)).data;\nexport const disapproveDiagnosis = async (scanId) => (await api.post(`/api/agronomist/reviews/${scanId}/disapprove`)).data;\n\n// Curated knowledge base aligned with Govt. of India (CIB&RC) registrations for offline demo resilience\nexport const CLIENT_KB = {\n  "Tomato___Late_blight": {\n    crop: "Tomato",\n    condition: "Late Blight",\n    category: "Fruit",\n    causal_microbe: "Phytophthora infestans",\n    pathogen_type: "Oomycete",\n    cibrc_approved_pesticides: [\n      "Metalaxyl 8% + Mancozeb 64% WP (Ridomil MZ)",\n      "Cymoxanil 8% + Mancozeb 64% WP (Curzate M8)",\n      "Dimethomorph 50% WP (Acrobat)",\n      "Mancozeb 75% WP",\n      "Copper Oxychloride 50% WP"\n    ],\n    recommended_dosage: "1.5 - 2.0 kg/ha in 500-750 L water (or 2.5 - 3.0 g/L)",\n    phi_waiting_period_days: 7,\n    bio_alternative: "Trichoderma viride 1% WP @ 2.5 kg/ha; Copper Hydroxide 77% WP",\n    safety_precautions: "Observe strict 7-day pre-harvest interval (PHI). Spray early morning or late afternoon. Wear protective eye and skin gear.",\n    symptoms: "Large, irregular greenish-gray water-soaked lesions turning dark brown; white downy sporulation underneath under high humidity; firm greasy brown fruit rot.",\n    spread_mechanism: "Windblown sporangia and splashing rain; thrives in cool, wet weather (15-22°C, RH >90%)."\n  },\n  "Tomato___Early_blight": {\n    crop: "Tomato",\n    condition: "Early Blight",\n    category: "Fruit",\n    causal_microbe: "Alternaria solani",\n    pathogen_type: "Fungus",\n    cibrc_approved_pesticides: [\n      "Mancozeb 75% WP",\n      "Chlorothalonil 75% WP (Kavach)",\n      "Azoxystrobin 23% SC",\n      "Propineb 70% WP (Antracol)",\n      "Difenoconazole 25% EC"\n    ],\n    recommended_dosage: "1.5 - 2.0 kg/ha in 500 L water",\n    phi_waiting_period_days: 5,\n    bio_alternative: "Pseudomonas fluorescens 1% WP @ 2.5 kg/ha; Neem oil (Azadirachtin 0.03% EC)",\n    safety_precautions: "5-day PHI. Rotate fungicide modes of action to prevent resistance.",\n    symptoms: "Concentric 'target board' dark rings on older lower leaves progressing upward.",\n    spread_mechanism: "Survives in crop debris and soil; rain splash in warm weather (24-29°C)."\n  },\n  "Tomato___Bacterial_spot": {\n    crop: "Tomato",\n    condition: "Bacterial Spot",\n    category: "Fruit",\n    causal_microbe: "Xanthomonas campestris pv. vesicatoria",\n    pathogen_type: "Bacterium",\n    cibrc_approved_pesticides: [\n      "Copper Oxychloride 50% WP + Streptomycin sulphate 9% + Tetracycline hydrochloride 1% SP (Streptocycline 100-200 ppm)",\n      "Copper Hydroxide 77% WP",\n      "Kasugamycin 3% SL"\n    ],\n    recommended_dosage: "Copper Oxychloride @ 2.5 g/L + Streptocycline @ 1 g/10 L water",\n    phi_waiting_period_days: 7,\n    bio_alternative: "Bacillus subtilis foliar formulation; Hot water seed treatment (50°C for 25 min)",\n    safety_precautions: "Do not exceed antibiotic dosage. 7-day PHI.",\n    symptoms: "Small, water-soaked dark circular spots on foliage with yellow halo; raised scabby spots on fruit.",\n    spread_mechanism: "Splashing rain, wind-driven rain, contaminated seeds, overhead irrigation."\n  },\n  "Apple___Apple_scab": {\n    crop: "Apple",\n    condition: "Apple Scab",\n    category: "Fruit",\n    causal_microbe: "Venturia inaequalis",\n    pathogen_type: "Fungus",\n    cibrc_approved_pesticides: [\n      "Captan 50% WP",\n      "Mancozeb 75% WP",\n      "Difenoconazole 25% EC",\n      "Dodine 65% WP"\n    ],\n    recommended_dosage: "Captan @ 250 g/100 L water or Difenoconazole @ 30 ml/100 L water",\n    phi_waiting_period_days: 14,\n    bio_alternative: "Sulfur 80% WDG @ 300 g/100 L water; post-harvest urea spray on fallen leaves",\n    safety_precautions: "Spray at green tip, pink bud, and petal fall stages. 14-day PHI.",\n    symptoms: "Olive-green, velvety spots on leaves turning brown and corky; dark cracked scabs on fruit.",\n    spread_mechanism: "Spring rain triggering ascospore release from fallen leaves on orchard floor."\n  },\n  "Potato___Late_blight": {\n    crop: "Potato",\n    condition: "Late Blight",\n    category: "Plant",\n    causal_microbe: "Phytophthora infestans",\n    pathogen_type: "Oomycete",\n    cibrc_approved_pesticides: [\n      "Metalaxyl 8% + Mancozeb 64% WP",\n      "Fenamidone 10% + Mancozeb 50% WG (Sectin)",\n      "Dimethomorph 50% WP",\n      "Mancozeb 75% WP"\n    ],\n    recommended_dosage: "2.0 kg/ha for Mancozeb or 1.5 kg/ha for Metalaxyl+Mancozeb",\n    phi_waiting_period_days: 7,\n    bio_alternative: "Trichoderma harzianum tuber treatment @ 10 g/kg; Copper Hydroxide",\n    safety_precautions: "7-day PHI. Destroy haulms 14 days prior to harvest to prevent tuber rot.",\n    symptoms: "Water-soaked dark brown foliage lesions with white downy growth; dry granular brown rot in tubers.",\n    spread_mechanism: "Windborne sporangia in cool, misty weather (12-22°C)."\n  },\n  "Potato___healthy": {\n    crop: "Potato",\n    condition: "Healthy",\n    category: "Plant",\n    causal_microbe: "None - Healthy Plant Tissue",\n    pathogen_type: "None",\n    cibrc_approved_pesticides: [],\n    recommended_dosage: "N/A - Zero chemical spray required",\n    phi_waiting_period_days: 0,\n    bio_alternative: "Maintain balanced nutrition (NPK) and organic compost",\n    safety_precautions: "100% safe for consumption and immediate harvesting.",\n    symptoms: "Clean, vigorous dark green foliage without lesions, chlorosis, or necrotic margins.",\n    spread_mechanism: "N/A"\n  },\n  "Tomato___healthy": {\n    crop: "Tomato",\n    condition: "Healthy",\n    category: "Fruit",\n    causal_microbe: "None - Healthy Tissue",\n    pathogen_type: "None",\n    cibrc_approved_pesticides: [],\n    recommended_dosage: "N/A - No chemical spray required",\n    phi_waiting_period_days: 0,\n    bio_alternative: "Preventive neem cake and organic compost",\n    safety_precautions: "100% safe for immediate harvest and fresh consumption.",\n    symptoms: "Vibrant uniform green foliage without spots or leaf curling.",\n    spread_mechanism: "N/A"\n  }\n};\n\n/**\n * Check backend status and connectivity\n */\nexport const checkSystemHealth = async () => {\n  try {\n    const res = await api.get('/');\n    return { online: true, ...res.data };\n  } catch (err) {\n    console.warn("Backend API unreachable:", err.message);\n    return {\n      online: false,\n      service: "Wisteria Crop Diagnosis",\n      model: "EfficientNet-B0 (Local Mode)",\n      device: "Local / Offline Fallback",\n      status: "offline"\n    };\n  }\n};\n\n/**\n * Predict crop disease from an image file\n */\nexport const predictImage = async (file) => {\n    const formData = new FormData();\n    formData.append('file', file);\n    const res = await api.post('/api/predict', formData, {\n      headers: { 'Content-Type': 'multipart/form-data' }\n    });\n    return { ...res.data, image_url: assetUrl(res.data.image_url), gradcam_url: assetUrl(res.data.gradcam_url) };\n};\n\nexport const FALLBACK_LANGUAGES = [\n  { code: 'en-IN', name: 'English', native: 'English' },\n  { code: 'hi-IN', name: 'Hindi', native: 'हिन्दी' },\n  { code: 'ta-IN', name: 'Tamil', native: 'தமிழ்' },\n  { code: 'te-IN', name: 'Telugu', native: 'తెలుగు' },\n  { code: 'kn-IN', name: 'Kannada', native: 'ಕನ್ನಡ' },\n  { code: 'bn-IN', name: 'Bengali', native: 'বাংলা' },\n  { code: 'mr-IN', name: 'Marathi', native: 'मराठी' },\n  { code: 'gu-IN', name: 'Gujarati', native: 'ગુજરાતી' },\n  { code: 'pa-IN', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },\n];\n\n/**\n * Fetch supported Indian languages from backend\n */\nexport const getSupportedLanguages = async () => {\n  try {\n    const res = await api.get('/api/languages');\n    return res.data.languages || FALLBACK_LANGUAGES;\n  } catch (err) {\n    console.warn("Failed to fetch languages, using fallback list:", err.message);\n    return FALLBACK_LANGUAGES;\n  }\n};\n\n/**\n * Get Sarvam voice services operational status\n */\nexport const getVoiceStatus = async () => {\n  try {\n    const res = await api.get('/api/voice/status');\n    return res.data;\n  } catch (err) {\n    return {\n      sarvam_configured: false,\n      models: { stt: "saaras:v4", tts: "bulbul:v4-flash", translation: "mayura:v1" },\n      supported_languages: FALLBACK_LANGUAGES\n    };\n  }\n};\n\n/**\n * Transcribe spoken audio using Sarvam Saaras v4\n */\nexport const transcribeAudio = async (audioBlob, languageCode = 'unknown') => {\n  const formData = new FormData();\n  const rawType = audioBlob.type || 'audio/webm';\n  const cleanType = rawType.split(';')[0].trim() || 'audio/webm';\n  const fileExt = cleanType.includes('mp4') ? 'mp4' : cleanType.includes('wav') ? 'wav' : 'webm';\n  const cleanBlob = new Blob([audioBlob], { type: cleanType });\n  formData.append('file', cleanBlob, `speech_recording.${fileExt}`);\n\n  const res = await api.post(`/api/voice/transcribe?language_code=${encodeURIComponent(languageCode)}`, formData, {\n    headers: { 'Content-Type': 'multipart/form-data' }\n  });\n  return res.data;\n};\n\n/**\n * Synthesize speech audio using Sarvam Bulbul v4-flash\n */\nexport const synthesizeSpeech = async (text, languageCode = 'en-IN', speaker = null) => {\n  const payload = {\n    text,\n    language_code: languageCode,\n    ...(speaker ? { speaker } : {})\n  };\n  const res = await api.post('/api/voice/synthesize', payload);\n  return res.data;\n};\n\n/**\n * Detect crop or disease from query string to automatically switch context\n */\nexport const detectDiseaseClassFromQuery = (query, currentClass = "Tomato___Late_blight") => {\n  const qNorm = (query || "").toLowerCase().replace(/[-_]/g, " ");\n  const allKeys = Object.keys(CLIENT_KB);\n\n  // 1. Check for combined crop + condition\n  for (const key of allKeys) {\n    const entry = CLIENT_KB[key];\n    const crop = entry.crop.toLowerCase();\n    const cond = entry.condition.toLowerCase();\n    if (qNorm.includes(crop) && qNorm.includes(cond)) {\n      return key;\n    }\n  }\n\n  // 2. Check for condition alone (e.g. 'early blight', 'late blight', 'apple scab')\n  for (const key of allKeys) {\n    const entry = CLIENT_KB[key];\n    const cond = entry.condition.toLowerCase();\n    if (cond.length >= 4 && qNorm.includes(cond)) {\n      if (currentClass && currentClass.toLowerCase().includes(entry.crop.toLowerCase())) {\n        return key;\n      }\n      return key;\n    }\n  }\n\n  return currentClass;\n};\n\n/**\n * Ask a question regarding a specific disease scan with multilingual support\n */\nexport const askScanQuestion = async (scanId, question, diseaseClass, languageCode = 'en-IN', synthesizeAudio = false) => {\n  try {\n    const res = await api.post(`/api/scans/${scanId}/ask`, {\n      question,\n      language_code: languageCode,\n      crop_disease_context: diseaseClass,\n      synthesize_audio: synthesizeAudio\n    });\n    return res.data;\n  } catch (err) {\n    console.warn("Backend API ask error, generating verified knowledge response:", err.message);\n    await new Promise((r) => setTimeout(r, 600));\n    const targetClass = detectDiseaseClassFromQuery(question, diseaseClass) || "Tomato___Late_blight";\n    const kb = CLIENT_KB[targetClass] || CLIENT_KB["Tomato___Late_blight"];\n    const qLower = question.toLowerCase();\n\n    let answer = "";\n    if (qLower.includes("pesticide") || qLower.includes("govt") || qLower.includes("cibrc") || qLower.includes("spray") || qLower.includes("chemical") || qLower.includes("cure")) {\n      answer = `Under Govt. of India (CIB&RC) regulations, the approved chemical formulations for ${kb.crop} ${kb.condition} are: ${kb.cibrc_approved_pesticides.join(", ")}. Recommended dosage: ${kb.recommended_dosage}. Mandatory waiting period (PHI): ${kb.phi_waiting_period_days} days.`;\n    } else if (qLower.includes("microbe") || qLower.includes("cause") || qLower.includes("pathogen") || qLower.includes("organism") || qLower.includes("why")) {\n      answer = `The causal pathogen is the ${kb.pathogen_type} "${kb.causal_microbe}". It spreads via: ${kb.spread_mechanism}`;\n    } else if (qLower.includes("safe") || qLower.includes("eat") || qLower.includes("harvest") || qLower.includes("waiting") || qLower.includes("phi")) {\n      answer = `${kb.safety_precautions} The mandatory pre-harvest interval (PHI) between spraying and consumption is ${kb.phi_waiting_period_days} days.`;\n    } else if (qLower.includes("organic") || qLower.includes("bio") || qLower.includes("natural")) {\n      answer = `Approved organic & bio-pesticide alternatives for ${kb.crop} ${kb.condition}: ${kb.bio_alternative}.`;\n    } else {\n      answer = `Regarding ${kb.crop} (${kb.condition}): Caused by ${kb.causal_microbe} (${kb.pathogen_type}). CIB&RC approved treatment: ${kb.cibrc_approved_pesticides[0] || 'Standard fungicide'} @ ${kb.recommended_dosage} with a ${kb.phi_waiting_period_days}-day harvest waiting period.`;\n    }\n\n    return {\n      question,\n      answer,\n      language_code: languageCode,\n      kb_entry_used: `CIB&RC Master Registry [${targetClass}]`,\n      audio_base64: null,\n      detected_disease_class: targetClass\n    };\n  }\n};\n\n/**\n * Generate VLM Diagnostic Report for a scan\n */\nexport const getVlmReport = async (scanId, diseaseClass, severity, confidence) => {\n  try {\n    const res = await api.post(`/api/scans/${scanId}/report`);\n    return res.data.report_text;\n  } catch (err) {\n    await new Promise((r) => setTimeout(r, 600));\n    const kb = CLIENT_KB[diseaseClass] || CLIENT_KB["Tomato___Late_blight"];\n    if (kb.condition === "Healthy") {\n      return `Visual morphological inspection reveals clean, healthy ${kb.crop} tissue with ${(confidence * 100).toFixed(1)}% model certainty. No signs of fungal sporulation, bacterial water-soaking, or viral mosaic curling detected. Safe for food harvest.`;\n    }\n    return `Visual analysis of this ${kb.crop} specimen confirms ${severity} infection of ${kb.condition} with ${(confidence * 100).toFixed(1)}% diagnostic confidence. The symptoms correspond to damage induced by the ${kb.pathogen_type} "${kb.causal_microbe}": ${kb.symptoms} Under Indian agronomic standards (CIB&RC), prompt application of ${kb.cibrc_approved_pesticides[0]} is advised with a strict ${kb.phi_waiting_period_days}-day harvest waiting period.`;\n  }\n};\n\n/**\n * Get Evaluation Metrics\n */\nexport const getMetrics = async () => {\n  try {\n    const res = await api.get('/api/metrics');\n    return res.data;\n  } catch (err) {\n    return {\n      macro_f1: 0.9149,\n      accuracy: 0.9315,\n      fruit_macro_f1: 0.9129,\n      plant_macro_f1: 0.9198,\n      total_test_samples: 8146,\n      target_met_macro_f1_gte_0_85: true,\n      roc_auc_macro: 0.9984\n    };\n  }\n};\n\n/**\n * Get CIB&RC Pesticide Master Catalog\n */\nexport const getPesticideRegistry = async (diseaseClass = null) => {\n  try {\n    const url = diseaseClass ? `/api/cibrc/pesticides?disease_class=${encodeURIComponent(diseaseClass)}` : '/api/cibrc/pesticides';\n    const res = await api.get(url);\n    return res.data;\n  } catch (err) {\n    if (diseaseClass && CLIENT_KB[diseaseClass]) {\n      return CLIENT_KB[diseaseClass];\n    }\n    return CLIENT_KB;\n  }\n};\n
+import axios from 'axios';
+
+// API Base URL configured via Vite environment variable, defaults to empty string for proxying to /api
+const baseURL = import.meta.env.VITE_API_URL || '';
+const assetUrl = (path) => path && baseURL ? new URL(path, baseURL).toString() : path;
+
+export const api = axios.create({
+  baseURL: baseURL,
+  timeout: 20000,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('agrovision_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export const signIn = async (credentials) => (await api.post('/api/auth/login', credentials)).data;
+export const signUp = async (details) => (await api.post('/api/auth/signup', details)).data;
+export const getCurrentUser = async () => (await api.get('/api/auth/me')).data;
+export const getMyScans = async () => (await api.get('/api/farmer/scans')).data.map(scan => ({ ...scan, image_url: assetUrl(scan.image_url), gradcam_url: assetUrl(scan.gradcam_url) }));
+export const getPendingReviews = async () => (await api.get('/api/agronomist/reviews')).data.map(scan => ({ ...scan, image_url: assetUrl(scan.image_url), gradcam_url: assetUrl(scan.gradcam_url) }));
+export const approveDiagnosis = async (scanId) => (await api.post(`/api/agronomist/reviews/${scanId}/approve`)).data;
+export const disapproveDiagnosis = async (scanId) => (await api.post(`/api/agronomist/reviews/${scanId}/disapprove`)).data;
+
+// Curated knowledge base aligned with Govt. of India (CIB&RC) registrations for offline demo resilience
+export const CLIENT_KB = {
+  "Tomato___Late_blight": {
+    crop: "Tomato",
+    condition: "Late Blight",
+    category: "Fruit",
+    causal_microbe: "Phytophthora infestans",
+    pathogen_type: "Oomycete",
+    cibrc_approved_pesticides: [
+      "Metalaxyl 8% + Mancozeb 64% WP (Ridomil MZ)",
+      "Cymoxanil 8% + Mancozeb 64% WP (Curzate M8)",
+      "Dimethomorph 50% WP (Acrobat)",
+      "Mancozeb 75% WP",
+      "Copper Oxychloride 50% WP"
+    ],
+    recommended_dosage: "1.5 - 2.0 kg/ha in 500-750 L water (or 2.5 - 3.0 g/L)",
+    phi_waiting_period_days: 7,
+    bio_alternative: "Trichoderma viride 1% WP @ 2.5 kg/ha; Copper Hydroxide 77% WP",
+    safety_precautions: "Observe strict 7-day pre-harvest interval (PHI). Spray early morning or late afternoon. Wear protective eye and skin gear.",
+    symptoms: "Large, irregular greenish-gray water-soaked lesions turning dark brown; white downy sporulation underneath under high humidity; firm greasy brown fruit rot.",
+    spread_mechanism: "Windblown sporangia and splashing rain; thrives in cool, wet weather (15-22°C, RH >90%)."
+  },
+  "Tomato___Early_blight": {
+    crop: "Tomato",
+    condition: "Early Blight",
+    category: "Fruit",
+    causal_microbe: "Alternaria solani",
+    pathogen_type: "Fungus",
+    cibrc_approved_pesticides: [
+      "Mancozeb 75% WP",
+      "Chlorothalonil 75% WP (Kavach)",
+      "Azoxystrobin 23% SC",
+      "Propineb 70% WP (Antracol)",
+      "Difenoconazole 25% EC"
+    ],
+    recommended_dosage: "1.5 - 2.0 kg/ha in 500 L water",
+    phi_waiting_period_days: 5,
+    bio_alternative: "Pseudomonas fluorescens 1% WP @ 2.5 kg/ha; Neem oil (Azadirachtin 0.03% EC)",
+    safety_precautions: "5-day PHI. Rotate fungicide modes of action to prevent resistance.",
+    symptoms: "Concentric 'target board' dark rings on older lower leaves progressing upward.",
+    spread_mechanism: "Survives in crop debris and soil; rain splash in warm weather (24-29°C)."
+  },
+  "Tomato___Bacterial_spot": {
+    crop: "Tomato",
+    condition: "Bacterial Spot",
+    category: "Fruit",
+    causal_microbe: "Xanthomonas campestris pv. vesicatoria",
+    pathogen_type: "Bacterium",
+    cibrc_approved_pesticides: [
+      "Copper Oxychloride 50% WP + Streptomycin sulphate 9% + Tetracycline hydrochloride 1% SP (Streptocycline 100-200 ppm)",
+      "Copper Hydroxide 77% WP",
+      "Kasugamycin 3% SL"
+    ],
+    recommended_dosage: "Copper Oxychloride @ 2.5 g/L + Streptocycline @ 1 g/10 L water",
+    phi_waiting_period_days: 7,
+    bio_alternative: "Bacillus subtilis foliar formulation; Hot water seed treatment (50°C for 25 min)",
+    safety_precautions: "Do not exceed antibiotic dosage. 7-day PHI.",
+    symptoms: "Small, water-soaked dark circular spots on foliage with yellow halo; raised scabby spots on fruit.",
+    spread_mechanism: "Splashing rain, wind-driven rain, contaminated seeds, overhead irrigation."
+  },
+  "Apple___Apple_scab": {
+    crop: "Apple",
+    condition: "Apple Scab",
+    category: "Fruit",
+    causal_microbe: "Venturia inaequalis",
+    pathogen_type: "Fungus",
+    cibrc_approved_pesticides: [
+      "Captan 50% WP",
+      "Mancozeb 75% WP",
+      "Difenoconazole 25% EC",
+      "Dodine 65% WP"
+    ],
+    recommended_dosage: "Captan @ 250 g/100 L water or Difenoconazole @ 30 ml/100 L water",
+    phi_waiting_period_days: 14,
+    bio_alternative: "Sulfur 80% WDG @ 300 g/100 L water; post-harvest urea spray on fallen leaves",
+    safety_precautions: "Spray at green tip, pink bud, and petal fall stages. 14-day PHI.",
+    symptoms: "Olive-green, velvety spots on leaves turning brown and corky; dark cracked scabs on fruit.",
+    spread_mechanism: "Spring rain triggering ascospore release from fallen leaves on orchard floor."
+  },
+  "Potato___Late_blight": {
+    crop: "Potato",
+    condition: "Late Blight",
+    category: "Plant",
+    causal_microbe: "Phytophthora infestans",
+    pathogen_type: "Oomycete",
+    cibrc_approved_pesticides: [
+      "Metalaxyl 8% + Mancozeb 64% WP",
+      "Fenamidone 10% + Mancozeb 50% WG (Sectin)",
+      "Dimethomorph 50% WP",
+      "Mancozeb 75% WP"
+    ],
+    recommended_dosage: "2.0 kg/ha for Mancozeb or 1.5 kg/ha for Metalaxyl+Mancozeb",
+    phi_waiting_period_days: 7,
+    bio_alternative: "Trichoderma harzianum tuber treatment @ 10 g/kg; Copper Hydroxide",
+    safety_precautions: "7-day PHI. Destroy haulms 14 days prior to harvest to prevent tuber rot.",
+    symptoms: "Water-soaked dark brown foliage lesions with white downy growth; dry granular brown rot in tubers.",
+    spread_mechanism: "Windborne sporangia in cool, misty weather (12-22°C)."
+  },
+  "Potato___healthy": {
+    crop: "Potato",
+    condition: "Healthy",
+    category: "Plant",
+    causal_microbe: "None - Healthy Plant Tissue",
+    pathogen_type: "None",
+    cibrc_approved_pesticides: [],
+    recommended_dosage: "N/A - Zero chemical spray required",
+    phi_waiting_period_days: 0,
+    bio_alternative: "Maintain balanced nutrition (NPK) and organic compost",
+    safety_precautions: "100% safe for consumption and immediate harvesting.",
+    symptoms: "Clean, vigorous dark green foliage without lesions, chlorosis, or necrotic margins.",
+    spread_mechanism: "N/A"
+  },
+  "Tomato___healthy": {
+    crop: "Tomato",
+    condition: "Healthy",
+    category: "Fruit",
+    causal_microbe: "None - Healthy Tissue",
+    pathogen_type: "None",
+    cibrc_approved_pesticides: [],
+    recommended_dosage: "N/A - No chemical spray required",
+    phi_waiting_period_days: 0,
+    bio_alternative: "Preventive neem cake and organic compost",
+    safety_precautions: "100% safe for immediate harvest and fresh consumption.",
+    symptoms: "Vibrant uniform green foliage without spots or leaf curling.",
+    spread_mechanism: "N/A"
+  }
+};
+
+/**
+ * Check backend status and connectivity
+ */
+export const checkSystemHealth = async () => {
+  try {
+    const res = await api.get('/');
+    return { online: true, ...res.data };
+  } catch (err) {
+    console.warn("Backend API unreachable:", err.message);
+    return {
+      online: false,
+      service: "Wisteria Crop Diagnosis",
+      model: "EfficientNet-B0 (Local Mode)",
+      device: "Local / Offline Fallback",
+      status: "offline"
+    };
+  }
+};
+
+/**
+ * Predict crop disease from an image file
+ */
+export const predictImage = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await api.post('/api/predict', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return { ...res.data, image_url: assetUrl(res.data.image_url), gradcam_url: assetUrl(res.data.gradcam_url) };
+};
+
+export const FALLBACK_LANGUAGES = [
+  { code: 'en-IN', name: 'English', native: 'English' },
+  { code: 'hi-IN', name: 'Hindi', native: 'हिन्दी' },
+  { code: 'ta-IN', name: 'Tamil', native: 'தமிழ்' },
+  { code: 'te-IN', name: 'Telugu', native: 'తెలుగు' },
+  { code: 'kn-IN', name: 'Kannada', native: 'ಕನ್ನಡ' },
+  { code: 'bn-IN', name: 'Bengali', native: 'বাংলা' },
+  { code: 'mr-IN', name: 'Marathi', native: 'मराठी' },
+  { code: 'gu-IN', name: 'Gujarati', native: 'ગુજરાતી' },
+  { code: 'pa-IN', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+];
+
+/**
+ * Fetch supported Indian languages from backend
+ */
+export const getSupportedLanguages = async () => {
+  try {
+    const res = await api.get('/api/languages');
+    return res.data.languages || FALLBACK_LANGUAGES;
+  } catch (err) {
+    console.warn("Failed to fetch languages, using fallback list:", err.message);
+    return FALLBACK_LANGUAGES;
+  }
+};
+
+/**
+ * Get Sarvam voice services operational status
+ */
+export const getVoiceStatus = async () => {
+  try {
+    const res = await api.get('/api/voice/status');
+    return res.data;
+  } catch (err) {
+    return {
+      sarvam_configured: false,
+      models: { stt: "saaras:v4", tts: "bulbul:v4-flash", translation: "mayura:v1" },
+      supported_languages: FALLBACK_LANGUAGES
+    };
+  }
+};
+
+/**
+ * Transcribe spoken audio using Sarvam Saaras v4
+ */
+export const transcribeAudio = async (audioBlob, languageCode = 'unknown') => {
+  const formData = new FormData();
+  const rawType = audioBlob.type || 'audio/webm';
+  const cleanType = rawType.split(';')[0].trim() || 'audio/webm';
+  const fileExt = cleanType.includes('mp4') ? 'mp4' : cleanType.includes('wav') ? 'wav' : 'webm';
+  const cleanBlob = new Blob([audioBlob], { type: cleanType });
+  formData.append('file', cleanBlob, `speech_recording.${fileExt}`);
+
+  const res = await api.post(`/api/voice/transcribe?language_code=${encodeURIComponent(languageCode)}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return res.data;
+};
+
+/**
+ * Synthesize speech audio using Sarvam Bulbul v4-flash
+ */
+export const synthesizeSpeech = async (text, languageCode = 'en-IN', speaker = null) => {
+  const payload = {
+    text,
+    language_code: languageCode,
+    ...(speaker ? { speaker } : {})
+  };
+  const res = await api.post('/api/voice/synthesize', payload);
+  return res.data;
+};
+
+/**
+ * Detect crop or disease from query string to automatically switch contex
+ */
+export const detectDiseaseClassFromQuery = (query, currentClass = "Tomato___Late_blight") => {
+  const qNorm = (query || "").toLowerCase().replace(/[-_]/g, " ");
+  const allKeys = Object.keys(CLIENT_KB);
+
+  // 1. Check for combined crop + condition
+  for (const key of allKeys) {
+    const entry = CLIENT_KB[key];
+    const crop = entry.crop.toLowerCase();
+    const cond = entry.condition.toLowerCase();
+    if (qNorm.includes(crop) && qNorm.includes(cond)) {
+      return key;
+    }
+  }
+
+  // 2. Check for condition alone (e.g. 'early blight', 'late blight', 'apple scab')
+  for (const key of allKeys) {
+    const entry = CLIENT_KB[key];
+    const cond = entry.condition.toLowerCase();
+    if (cond.length >= 4 && qNorm.includes(cond)) {
+      if (currentClass && currentClass.toLowerCase().includes(entry.crop.toLowerCase())) {
+        return key;
+      }
+      return key;
+    }
+  }
+
+  return currentClass;
+};
+
+/**
+ * Ask a question regarding a specific disease scan with multilingual suppor
+ */
+export const askScanQuestion = async (scanId, question, diseaseClass, languageCode = 'en-IN', synthesizeAudio = false) => {
+  try {
+    const res = await api.post(`/api/scans/${scanId}/ask`, {
+      question,
+      language_code: languageCode,
+      crop_disease_context: diseaseClass,
+      synthesize_audio: synthesizeAudio
+    });
+    return res.data;
+  } catch (err) {
+    console.warn("Backend API ask error, generating verified knowledge response:", err.message);
+    await new Promise((r) => setTimeout(r, 600));
+    const targetClass = detectDiseaseClassFromQuery(question, diseaseClass) || "Tomato___Late_blight";
+    const kb = CLIENT_KB[targetClass] || CLIENT_KB["Tomato___Late_blight"];
+    const qLower = question.toLowerCase();
+
+    let answer = "";
+    if (qLower.includes("pesticide") || qLower.includes("govt") || qLower.includes("cibrc") || qLower.includes("spray") || qLower.includes("chemical") || qLower.includes("cure")) {
+      answer = `Under Govt. of India (CIB&RC) regulations, the approved chemical formulations for ${kb.crop} ${kb.condition} are: ${kb.cibrc_approved_pesticides.join(", ")}. Recommended dosage: ${kb.recommended_dosage}. Mandatory waiting period (PHI): ${kb.phi_waiting_period_days} days.`;
+    } else if (qLower.includes("microbe") || qLower.includes("cause") || qLower.includes("pathogen") || qLower.includes("organism") || qLower.includes("why")) {
+      answer = `The causal pathogen is the ${kb.pathogen_type} "${kb.causal_microbe}". It spreads via: ${kb.spread_mechanism}`;
+    } else if (qLower.includes("safe") || qLower.includes("eat") || qLower.includes("harvest") || qLower.includes("waiting") || qLower.includes("phi")) {
+      answer = `${kb.safety_precautions} The mandatory pre-harvest interval (PHI) between spraying and consumption is ${kb.phi_waiting_period_days} days.`;
+    } else if (qLower.includes("organic") || qLower.includes("bio") || qLower.includes("natural")) {
+      answer = `Approved organic & bio-pesticide alternatives for ${kb.crop} ${kb.condition}: ${kb.bio_alternative}.`;
+    } else {
+      answer = `Regarding ${kb.crop} (${kb.condition}): Caused by ${kb.causal_microbe} (${kb.pathogen_type}). CIB&RC approved treatment: ${kb.cibrc_approved_pesticides[0] || 'Standard fungicide'} @ ${kb.recommended_dosage} with a ${kb.phi_waiting_period_days}-day harvest waiting period.`;
+    }
+
+    return {
+      question,
+      answer,
+      language_code: languageCode,
+      kb_entry_used: `CIB&RC Master Registry [${targetClass}]`,
+      audio_base64: null,
+      detected_disease_class: targetClass
+    };
+  }
+};
+
+/**
+ * Generate VLM Diagnostic Report for a scan
+ */
+export const getVlmReport = async (scanId, diseaseClass, severity, confidence) => {
+  try {
+    const res = await api.post(`/api/scans/${scanId}/report`);
+    return res.data.report_text;
+  } catch (err) {
+    await new Promise((r) => setTimeout(r, 600));
+    const kb = CLIENT_KB[diseaseClass] || CLIENT_KB["Tomato___Late_blight"];
+    if (kb.condition === "Healthy") {
+      return `Visual morphological inspection reveals clean, healthy ${kb.crop} tissue with ${(confidence * 100).toFixed(1)}% model certainty. No signs of fungal sporulation, bacterial water-soaking, or viral mosaic curling detected. Safe for food harvest.`;
+    }
+    return `Visual analysis of this ${kb.crop} specimen confirms ${severity} infection of ${kb.condition} with ${(confidence * 100).toFixed(1)}% diagnostic confidence. The symptoms correspond to damage induced by the ${kb.pathogen_type} "${kb.causal_microbe}": ${kb.symptoms} Under Indian agronomic standards (CIB&RC), prompt application of ${kb.cibrc_approved_pesticides[0]} is advised with a strict ${kb.phi_waiting_period_days}-day harvest waiting period.`;
+  }
+};
+
+/**
+ * Get Evaluation Metrics
+ */
+export const getMetrics = async () => {
+  try {
+    const res = await api.get('/api/metrics');
+    return res.data;
+  } catch (err) {
+    return {
+      macro_f1: 0.9149,
+      accuracy: 0.9315,
+      fruit_macro_f1: 0.9129,
+      plant_macro_f1: 0.9198,
+      total_test_samples: 8146,
+      target_met_macro_f1_gte_0_85: true,
+      roc_auc_macro: 0.9984
+    };
+  }
+};
+
+/**
+ * Get CIB&RC Pesticide Master Catalog
+ */
+export const getPesticideRegistry = async (diseaseClass = null) => {
+  try {
+    const url = diseaseClass ? `/api/cibrc/pesticides?disease_class=${encodeURIComponent(diseaseClass)}` : '/api/cibrc/pesticides';
+    const res = await api.get(url);
+    return res.data;
+  } catch (err) {
+    if (diseaseClass && CLIENT_KB[diseaseClass]) {
+      return CLIENT_KB[diseaseClass];
+    }
+    return CLIENT_KB;
+  }
+};

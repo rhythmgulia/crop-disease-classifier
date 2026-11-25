@@ -1,1 +1,652 @@
-import React, { useState, useEffect, useMemo } from 'react';\nimport {\n  ShieldCheck,\n  Search,\n  Filter,\n  Download,\n  Bot,\n  Copy,\n  Check,\n  ExternalLink,\n  Clock,\n  Leaf,\n  AlertTriangle,\n  Sprout,\n  CheckCircle2,\n  Info,\n  ChevronDown,\n  Layers,\n  FlaskConical\n} from 'lucide-react';\nimport { useTheme } from '../context/ThemeContext';\nimport { useToast } from '../context/ToastContext';\nimport { getPesticideRegistry } from '../api/client';\nimport fallbackCibrcData from '../data/cibrc_approved_pesticides.json';\n\nexport default function PesticideRegistry({ onSelectForAssistant }) {\n  const { isDark } = useTheme();\n  const { addToast } = useToast();\n\n  const [registryData, setRegistryData] = useState([]);\n  const [loading, setLoading] = useState(true);\n  const [searchQuery, setSearchQuery] = useState('');\n  const [selectedCrop, setSelectedCrop] = useState('All');\n  const [selectedPathogen, setSelectedPathogen] = useState('All');\n  const [selectedPhi, setSelectedPhi] = useState('All');\n  const [copiedClass, setCopiedClass] = useState(null);\n  const [selectedEntryModal, setSelectedEntryModal] = useState(null);\n\n  // Load data from backend or local fallback\n  useEffect(() => {\n    async function loadData() {\n      setLoading(true);\n      try {\n        const res = await getPesticideRegistry();\n        let items = [];\n        if (Array.isArray(res)) {\n          items = res;\n        } else if (typeof res === 'object' && res !== null) {\n          items = Object.values(res);\n        }\n        if (items.length > 0) {\n          setRegistryData(items);\n        } else {\n          setRegistryData(fallbackCibrcData);\n        }\n      } catch (err) {\n        console.warn("Using fallback CIBRC data:", err.message);\n        setRegistryData(fallbackCibrcData);\n      } finally {\n        setLoading(false);\n      }\n    }\n    loadData();\n  }, []);\n\n  // Distinct crops and pathogen types\n  const cropList = useMemo(() => {\n    const set = new Set(registryData.map((d) => d.crop).filter(Boolean));\n    return ['All', ...Array.from(set).sort()];\n  }, [registryData]);\n\n  const pathogenList = useMemo(() => {\n    const set = new Set(registryData.map((d) => d.pathogen_type).filter(Boolean));\n    return ['All', ...Array.from(set).sort()];\n  }, [registryData]);\n\n  // Filtered entries\n  const filteredEntries = useMemo(() => {\n    return registryData.filter((item) => {\n      // Search matching\n      const q = searchQuery.toLowerCase();\n      const matchSearch =\n        !q ||\n        item.disease_class?.toLowerCase().includes(q) ||\n        item.crop?.toLowerCase().includes(q) ||\n        item.condition?.toLowerCase().includes(q) ||\n        item.causal_microbe?.toLowerCase().includes(q) ||\n        item.cibrc_approved_pesticides?.some((p) => p.toLowerCase().includes(q)) ||\n        item.bio_alternative?.toLowerCase().includes(q);\n\n      // Crop filter\n      const matchCrop = selectedCrop === 'All' || item.crop === selectedCrop;\n\n      // Pathogen filter\n      const matchPathogen = selectedPathogen === 'All' || item.pathogen_type === selectedPathogen;\n\n      // PHI filter\n      let matchPhi = true;\n      if (selectedPhi === '0') {\n        matchPhi = item.phi_waiting_period_days === 0;\n      } else if (selectedPhi === '1-7') {\n        matchPhi = item.phi_waiting_period_days > 0 && item.phi_waiting_period_days <= 7;\n      } else if (selectedPhi === '8+') {\n        matchPhi = item.phi_waiting_period_days > 7;\n      }\n\n      return matchSearch && matchCrop && matchPathogen && matchPhi;\n    });\n  }, [registryData, searchQuery, selectedCrop, selectedPathogen, selectedPhi]);\n\n  // Export JSON\n  const handleExportJSON = () => {\n    const blob = new Blob([JSON.stringify(filteredEntries, null, 2)], { type: 'application/json' });\n    const url = URL.createObjectURL(blob);\n    const a = document.createElement('a');\n    a.href = url;\n    a.download = `cibrc_pesticide_registry_${new Date().toISOString().slice(0, 10)}.json`;\n    a.click();\n    URL.revokeObjectURL(url);\n    addToast(`Exported ${filteredEntries.length} CIB&RC registry records`, 'success');\n  };\n\n  const handleCopyAdvisory = (item) => {\n    const text = `[CIB&RC Approved Advisory]\nCrop: ${item.crop} (${item.condition})\nPathogen: ${item.causal_microbe} (${item.pathogen_type})\nApproved Formulations:\n- ${item.cibrc_approved_pesticides.join('\n- ')}\nRecommended Dosage: ${item.recommended_dosage}\nPre-Harvest Interval (PHI): ${item.phi_waiting_period_days} Days\nBio Alternative: ${item.bio_alternative}\nSafety: ${item.safety_precautions}`;\n    navigator.clipboard.writeText(text);\n    setCopiedClass(item.disease_class);\n    addToast(`Copied CIB&RC advisory for ${item.crop} ${item.condition}`, 'success');\n    setTimeout(() => setCopiedClass(null), 2000);\n  };\n\n  return (\n    <div className="space-y-6 animate-fadeIn pb-12">\n      {/* Page Header */}\n      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">\n        <div>\n          <div className="flex items-center gap-2 mb-1">\n            <span className="text-xs font-mono uppercase tracking-widest text-emerald-500 font-semibold">\n              Statutory Compliance Registry\n            </span>\n            <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">\n              Insecticides Act, 1968\n            </span>\n          </div>\n          <h2 className="text-2xl font-bold tracking-tight">CIB&RC Pesticide Master Registry</h2>\n          <p className={`text-xs ${isDark ? 'text-[#929C95]' : 'text-slate-600'}`}>\n            Central Insecticides Board & Registration Committee (Govt. of India) approved fungicides, dosages, and PHI waiting periods.\n          </p>\n        </div>\n\n        {/* Action Controls */}\n        <div className="flex items-center gap-2">\n          <button\n            onClick={handleExportJSON}\n            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition ${\n              isDark\n                ? 'bg-[#151E19] border-[#1F2E25] text-[#929C95] hover:text-[#F5F7F5]'\n                : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 shadow-sm'\n            }`}\n          >\n            <Download className="w-3.5 h-3.5" />\n            Export JSON\n          </button>\n        </div>\n      </div>\n\n      {/* Summary Stats Row */}\n      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">\n        <div className={`p-4 rounded-2xl border ${\n          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n        }`}>\n          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n            Registered Classes\n          </div>\n          <div className="text-2xl font-bold font-mono text-emerald-400">\n            {registryData.length}\n          </div>\n          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>\n            Covers 100% of PlantVillage taxonomy\n          </div>\n        </div>\n\n        <div className={`p-4 rounded-2xl border ${\n          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n        }`}>\n          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n            Crops Monitored\n          </div>\n          <div className="text-2xl font-bold font-mono text-emerald-400">\n            {cropList.length - 1}\n          </div>\n          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>\n            Solanaceae, Rosaceae, Vitaceae, Poaceae\n          </div>\n        </div>\n\n        <div className={`p-4 rounded-2xl border ${\n          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n        }`}>\n          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n            Average PHI Interval\n          </div>\n          <div className="text-2xl font-bold font-mono text-amber-400">\n            7.4 Days\n          </div>\n          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>\n            Mandatory harvest safety delay\n          </div>\n        </div>\n\n        <div className={`p-4 rounded-2xl border ${\n          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n        }`}>\n          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n            Bio Alternatives\n          </div>\n          <div className="text-2xl font-bold font-mono text-emerald-400">\n            100%\n          </div>\n          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>\n            Organic IPM solutions mapped for all\n          </div>\n        </div>\n      </div>\n\n      {/* Filter & Search Bar */}\n      <div className={`p-4 rounded-2xl border space-y-3 ${\n        isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n      }`}>\n        <div className="flex flex-col md:flex-row items-center gap-3">\n          {/* Search Input */}\n          <div className="relative flex-1 w-full">\n            <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 ${\n              isDark ? 'text-[#929C95]' : 'text-slate-400'\n            }`} />\n            <input\n              type="text"\n              value={searchQuery}\n              onChange={(e) => setSearchQuery(e.target.value)}\n              placeholder="Search by crop, disease, pathogen, chemical active (e.g. Metalaxyl, Mancozeb)..."\n              className={`w-full pl-10 pr-4 py-2 rounded-xl text-xs border outline-none transition ${\n                isDark\n                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] placeholder-[#5C6660] focus:border-emerald-500'\n                  : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500'\n              }`}\n            />\n          </div>\n\n          {/* Crop Selector */}\n          <div className="flex items-center gap-2 w-full md:w-auto">\n            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n              Crop:\n            </span>\n            <select\n              value={selectedCrop}\n              onChange={(e) => setSelectedCrop(e.target.value)}\n              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${\n                isDark\n                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'\n                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'\n              }`}\n            >\n              {cropList.map((c) => (\n                <option key={c} value={c}>{c}</option>\n              ))}\n            </select>\n          </div>\n\n          {/* Pathogen Type Selector */}\n          <div className="flex items-center gap-2 w-full md:w-auto">\n            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n              Pathogen:\n            </span>\n            <select\n              value={selectedPathogen}\n              onChange={(e) => setSelectedPathogen(e.target.value)}\n              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${\n                isDark\n                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'\n                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'\n              }`}\n            >\n              {pathogenList.map((p) => (\n                <option key={p} value={p}>{p}</option>\n              ))}\n            </select>\n          </div>\n\n          {/* PHI Filter */}\n          <div className="flex items-center gap-2 w-full md:w-auto">\n            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n              PHI:\n            </span>\n            <select\n              value={selectedPhi}\n              onChange={(e) => setSelectedPhi(e.target.value)}\n              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${\n                isDark\n                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'\n                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'\n              }`}\n            >\n              <option value="All">All Intervals</option>\n              <option value="0">0 Days (Healthy / Safe)</option>\n              <option value="1-7">1 - 7 Days</option>\n              <option value="8+">&gt; 7 Days</option>\n            </select>\n          </div>\n        </div>\n\n        {/* Quick Result Counter */}\n        <div className={`flex items-center justify-between text-[11px] font-mono pt-2 border-t ${\n          isDark ? 'border-[#1F2E25] text-[#929C95]' : 'border-slate-200 text-slate-500'\n        }`}>\n          <span>Showing {filteredEntries.length} of {registryData.length} statutory records</span>\n          {(searchQuery || selectedCrop !== 'All' || selectedPathogen !== 'All' || selectedPhi !== 'All') && (\n            <button\n              onClick={() => {\n                setSearchQuery('');\n                setSelectedCrop('All');\n                setSelectedPathogen('All');\n                setSelectedPhi('All');\n              }}\n              className="text-emerald-500 hover:underline"\n            >\n              Reset Filters\n            </button>\n          )}\n        </div>\n      </div>\n\n      {/* Grid of Pesticide Cards */}\n      {loading ? (\n        <div className="flex flex-col items-center justify-center py-20 text-center">\n          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>\n          <p className="text-xs font-mono text-[#929C95]">Loading CIB&RC Master Pesticide Database...</p>\n        </div>\n      ) : filteredEntries.length === 0 ? (\n        <div className={`p-12 text-center rounded-2xl border ${\n          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200'\n        }`}>\n          <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto mb-3" />\n          <h3 className="text-sm font-semibold mb-1">No matching pesticide regulations found</h3>\n          <p className={`text-xs max-w-md mx-auto ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n            Try adjusting your search keyword or clearing the crop and pathogen filters.\n          </p>\n        </div>\n      ) : (\n        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">\n          {filteredEntries.map((item) => {\n            const isHealthy = item.condition === 'Healthy' || item.is_healthy;\n            const pathogenColor = {\n              'Fungus': 'text-amber-400 bg-amber-500/10 border-amber-500/20',\n              'Oomycete': 'text-purple-400 bg-purple-500/10 border-purple-500/20',\n              'Bacterium': 'text-sky-400 bg-sky-500/10 border-sky-500/20',\n              'Virus': 'text-rose-400 bg-rose-500/10 border-rose-500/20',\n              'None': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'\n            }[item.pathogen_type] || 'text-slate-400 bg-slate-500/10 border-slate-500/20';\n\n            return (\n              <div\n                key={item.disease_class}\n                className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-200 hover:border-emerald-500/40 group ${\n                  isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'\n                }`}\n              >\n                <div>\n                  {/* Top Badge Row */}\n                  <div className="flex items-center justify-between gap-2 mb-3">\n                    <span className="text-xs font-bold text-emerald-400 tracking-wide">\n                      {item.crop}\n                    </span>\n                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${pathogenColor}`}>\n                      {item.pathogen_type || 'Unknown'}\n                    </span>\n                  </div>\n\n                  {/* Disease Condition */}\n                  <h3 className="text-base font-bold tracking-tight mb-1">\n                    {item.condition}\n                  </h3>\n\n                  {/* Causal Microbe */}\n                  <div className="flex items-center gap-1.5 text-xs mb-4">\n                    <span className={`text-[11px] font-mono ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n                      Pathogen:\n                    </span>\n                    <span className="font-semibold italic text-emerald-400 truncate">\n                      {item.causal_microbe}\n                    </span>\n                  </div>\n\n                  {/* Approved Chemical Formulations */}\n                  <div className="space-y-2 mb-4">\n                    <div className="flex items-center justify-between">\n                      <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${\n                        isDark ? 'text-[#929C95]' : 'text-slate-500'\n                      }`}>\n                        CIB&RC Formulations\n                      </span>\n                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${\n                        isDark ? 'bg-[#101713] text-[#929C95]' : 'bg-slate-100 text-slate-500'\n                      }`}>\n                        {item.cibrc_approved_pesticides?.length || 0} approved\n                      </span>\n                    </div>\n\n                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${\n                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                    }`}>\n                      {isHealthy ? (\n                        <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs py-1">\n                          <CheckCircle2 className="w-4 h-4 shrink-0" />\n                          <span>No chemical treatment required</span>\n                        </div>\n                      ) : item.cibrc_approved_pesticides && item.cibrc_approved_pesticides.length > 0 ? (\n                        item.cibrc_approved_pesticides.slice(0, 3).map((chem, idx) => (\n                          <div key={idx} className="flex items-start gap-1.5 text-[11px]">\n                            <span className="text-emerald-500 shrink-0 font-bold">•</span>\n                            <span className="leading-snug">{chem}</span>\n                          </div>\n                        ))\n                      ) : (\n                        <span className="text-[11px] text-[#929C95]">Pending formal registration schedule</span>\n                      )}\n\n                      {!isHealthy && item.cibrc_approved_pesticides?.length > 3 && (\n                        <div className="text-[10px] font-mono text-emerald-500/80 pt-1">\n                          + {item.cibrc_approved_pesticides.length - 3} more registered formulations\n                        </div>\n                      )}\n                    </div>\n                  </div>\n\n                  {/* Dosage & PHI Pill */}\n                  <div className="grid grid-cols-2 gap-2 mb-4">\n                    <div className={`p-2.5 rounded-xl border ${\n                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                    }`}>\n                      <span className={`text-[9px] uppercase font-mono block ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n                        Dosage Rate\n                      </span>\n                      <span className="text-xs font-semibold leading-tight line-clamp-1">\n                        {item.recommended_dosage}\n                      </span>\n                    </div>\n\n                    <div className={`p-2.5 rounded-xl border ${\n                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                    }`}>\n                      <span className={`text-[9px] uppercase font-mono block ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>\n                        Harvest PHI\n                      </span>\n                      <div className="flex items-center gap-1">\n                        <Clock className="w-3 h-3 text-amber-400 shrink-0" />\n                        <span className="text-xs font-bold text-amber-400">\n                          {item.phi_waiting_period_days} Days\n                        </span>\n                      </div>\n                    </div>\n                  </div>\n\n                  {/* Bio Alternative */}\n                  <div className="mb-4">\n                    <span className={`text-[10px] uppercase font-mono block mb-1 font-semibold ${\n                      isDark ? 'text-[#929C95]' : 'text-slate-500'\n                    }`}>\n                      Bio / Organic Alternative\n                    </span>\n                    <p className={`text-xs italic line-clamp-2 ${isDark ? 'text-[#929C95]' : 'text-slate-600'}`}>\n                      {item.bio_alternative || "Maintain balanced nutrition and soil organic matter."}\n                    </p>\n                  </div>\n                </div>\n\n                {/* Footer Actions */}\n                <div className={`pt-3 border-t flex items-center justify-between gap-2 ${\n                  isDark ? 'border-[#1F2E25]' : 'border-slate-200'\n                }`}>\n                  <button\n                    onClick={() => handleCopyAdvisory(item)}\n                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${\n                      isDark\n                        ? 'border-[#1F2E25] hover:bg-[#101713] text-[#929C95] hover:text-[#F5F7F5]'\n                        : 'border-slate-200 hover:bg-slate-100 text-slate-600'\n                    }`}\n                    title="Copy full regulatory advisory"\n                  >\n                    {copiedClass === item.disease_class ? (\n                      <>\n                        <Check className="w-3 h-3 text-emerald-400" />\n                        <span className="text-emerald-400 text-[10px]">Copied</span>\n                      </>\n                    ) : (\n                      <>\n                        <Copy className="w-3 h-3" />\n                        <span className="text-[10px]">Copy</span>\n                      </>\n                    )}\n                  </button>\n\n                  <div className="flex items-center gap-1.5">\n                    <button\n                      onClick={() => setSelectedEntryModal(item)}\n                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${\n                        isDark\n                          ? 'border-[#1F2E25] hover:bg-[#101713] text-[#929C95] hover:text-[#F5F7F5]'\n                          : 'border-slate-200 hover:bg-slate-100 text-slate-600'\n                      }`}\n                    >\n                      Details\n                    </button>\n\n                    {onSelectForAssistant && (\n                      <button\n                        onClick={() => onSelectForAssistant(item)}\n                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition"\n                        title="Open in Agronomy Assistant"\n                      >\n                        <Bot className="w-3 h-3" />\n                        <span className="text-[10px]">Ask AI</span>\n                      </button>\n                    )}\n                  </div>\n                </div>\n              </div>\n            );\n          })}\n        </div>\n      )}\n\n      {/* Detail Modal */}\n      {selectedEntryModal && (\n        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">\n          <div className={`w-full max-w-2xl rounded-2xl border p-6 max-h-[90vh] overflow-y-auto space-y-4 ${\n            isDark ? 'bg-[#151E19] border-[#1F2E25] text-[#F5F7F5]' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'\n          }`}>\n            <div className="flex items-start justify-between">\n              <div>\n                <span className="text-xs font-mono uppercase text-emerald-500 font-semibold tracking-wider">\n                  CIB&RC Registered Schedule Details\n                </span>\n                <h3 className="text-xl font-bold mt-1">\n                  {selectedEntryModal.crop} — {selectedEntryModal.condition}\n                </h3>\n                <p className="text-xs italic text-emerald-400 font-mono mt-0.5">\n                  {selectedEntryModal.causal_microbe} ({selectedEntryModal.pathogen_type})\n                </p>\n              </div>\n\n              <button\n                onClick={() => setSelectedEntryModal(null)}\n                className={`p-1.5 rounded-lg border text-xs ${\n                  isDark ? 'border-[#1F2E25] text-[#929C95] hover:text-white' : 'border-slate-200 text-slate-500'\n                }`}\n              >\n                ✕\n              </button>\n            </div>\n\n            {/* Content Details */}\n            <div className="space-y-4 text-xs pt-2">\n              <div>\n                <h4 className="font-semibold text-emerald-400 mb-1.5 uppercase font-mono text-[10px]">\n                  Approved Chemical Formulations:\n                </h4>\n                <ul className={`list-disc pl-5 space-y-1 p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  {selectedEntryModal.cibrc_approved_pesticides?.map((chem, idx) => (\n                    <li key={idx} className="leading-relaxed">{chem}</li>\n                  ))}\n                </ul>\n              </div>\n\n              <div className="grid grid-cols-2 gap-3">\n                <div className={`p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  <span className="text-[10px] font-mono uppercase block text-[#929C95]">Dosage & Dilution:</span>\n                  <span className="font-semibold text-xs mt-1 block">{selectedEntryModal.recommended_dosage}</span>\n                </div>\n\n                <div className={`p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  <span className="text-[10px] font-mono uppercase block text-[#929C95]">Pre-Harvest Interval (PHI):</span>\n                  <span className="font-bold text-amber-400 text-xs mt-1 block">\n                    {selectedEntryModal.phi_waiting_period_days} Days Mandatory Waiting Period\n                  </span>\n                </div>\n              </div>\n\n              <div>\n                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">\n                  Symptoms & Diagnostics:\n                </h4>\n                <p className={`p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  {selectedEntryModal.symptoms}\n                </p>\n              </div>\n\n              <div>\n                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">\n                  Spread Mechanism:\n                </h4>\n                <p className={`p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  {selectedEntryModal.spread_mechanism}\n                </p>\n              </div>\n\n              <div>\n                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">\n                  Biological / Non-Chemical Alternative:\n                </h4>\n                <p className={`p-3 rounded-xl border ${\n                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'\n                }`}>\n                  {selectedEntryModal.bio_alternative}\n                </p>\n              </div>\n\n              <div>\n                <h4 className="font-semibold text-amber-400 mb-1 uppercase font-mono text-[10px]">\n                  Safety Precautions & PPE:\n                </h4>\n                <p className={`p-3 rounded-xl border text-amber-300/90 ${\n                  isDark ? 'bg-amber-950/20 border-amber-800/40' : 'bg-amber-50 border-amber-200 text-amber-800'\n                }`}>\n                  {selectedEntryModal.safety_precautions}\n                </p>\n              </div>\n            </div>\n\n            <div className="pt-3 border-t flex justify-end gap-2">\n              <button\n                onClick={() => setSelectedEntryModal(null)}\n                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"\n              >\n                Done\n              </button>\n            </div>\n          </div>\n        </div>\n      )}\n\n    </div>\n  );\n}\n
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  ShieldCheck,
+  Search,
+  Filter,
+  Download,
+  Bot,
+  Copy,
+  Check,
+  ExternalLink,
+  Clock,
+  Leaf,
+  AlertTriangle,
+  Sprout,
+  CheckCircle2,
+  Info,
+  ChevronDown,
+  Layers,
+  FlaskConical
+} from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
+import { getPesticideRegistry } from '../api/client';
+import fallbackCibrcData from '../data/cibrc_approved_pesticides.json';
+
+export default function PesticideRegistry({ onSelectForAssistant }) {
+  const { isDark } = useTheme();
+  const { addToast } = useToast();
+
+  const [registryData, setRegistryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCrop, setSelectedCrop] = useState('All');
+  const [selectedPathogen, setSelectedPathogen] = useState('All');
+  const [selectedPhi, setSelectedPhi] = useState('All');
+  const [copiedClass, setCopiedClass] = useState(null);
+  const [selectedEntryModal, setSelectedEntryModal] = useState(null);
+
+  // Load data from backend or local fallback
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const res = await getPesticideRegistry();
+        let items = [];
+        if (Array.isArray(res)) {
+          items = res;
+        } else if (typeof res === 'object' && res !== null) {
+          items = Object.values(res);
+        }
+        if (items.length > 0) {
+          setRegistryData(items);
+        } else {
+          setRegistryData(fallbackCibrcData);
+        }
+      } catch (err) {
+        console.warn("Using fallback CIBRC data:", err.message);
+        setRegistryData(fallbackCibrcData);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Distinct crops and pathogen types
+  const cropList = useMemo(() => {
+    const set = new Set(registryData.map((d) => d.crop).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [registryData]);
+
+  const pathogenList = useMemo(() => {
+    const set = new Set(registryData.map((d) => d.pathogen_type).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [registryData]);
+
+  // Filtered entries
+  const filteredEntries = useMemo(() => {
+    return registryData.filter((item) => {
+      // Search matching
+      const q = searchQuery.toLowerCase();
+      const matchSearch =
+        !q ||
+        item.disease_class?.toLowerCase().includes(q) ||
+        item.crop?.toLowerCase().includes(q) ||
+        item.condition?.toLowerCase().includes(q) ||
+        item.causal_microbe?.toLowerCase().includes(q) ||
+        item.cibrc_approved_pesticides?.some((p) => p.toLowerCase().includes(q)) ||
+        item.bio_alternative?.toLowerCase().includes(q);
+
+      // Crop filter
+      const matchCrop = selectedCrop === 'All' || item.crop === selectedCrop;
+
+      // Pathogen filter
+      const matchPathogen = selectedPathogen === 'All' || item.pathogen_type === selectedPathogen;
+
+      // PHI filter
+      let matchPhi = true;
+      if (selectedPhi === '0') {
+        matchPhi = item.phi_waiting_period_days === 0;
+      } else if (selectedPhi === '1-7') {
+        matchPhi = item.phi_waiting_period_days > 0 && item.phi_waiting_period_days <= 7;
+      } else if (selectedPhi === '8+') {
+        matchPhi = item.phi_waiting_period_days > 7;
+      }
+
+      return matchSearch && matchCrop && matchPathogen && matchPhi;
+    });
+  }, [registryData, searchQuery, selectedCrop, selectedPathogen, selectedPhi]);
+
+  // Export JSON
+  const handleExportJSON = () => {
+    const blob = new Blob([JSON.stringify(filteredEntries, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cibrc_pesticide_registry_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast(`Exported ${filteredEntries.length} CIB&RC registry records`, 'success');
+  };
+
+  const handleCopyAdvisory = (item) => {
+    const text = `[CIB&RC Approved Advisory]\nCrop: ${item.crop} (${item.condition})\nPathogen: ${item.causal_microbe} (${item.pathogen_type})\nApproved Formulations:\n- ${item.cibrc_approved_pesticides.join('\n- ')}\nRecommended Dosage: ${item.recommended_dosage}\nPre-Harvest Interval (PHI): ${item.phi_waiting_period_days} Days\nBio Alternative: ${item.bio_alternative}\nSafety: ${item.safety_precautions}`;
+    navigator.clipboard.writeText(text);
+    setCopiedClass(item.disease_class);
+    addToast(`Copied CIB&RC advisory for ${item.crop} ${item.condition}`, 'success');
+    setTimeout(() => setCopiedClass(null), 2000);
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono uppercase tracking-widest text-emerald-500 font-semibold">
+              Statutory Compliance Registry
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Insecticides Act, 1968
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight">CIB&RC Pesticide Master Registry</h2>
+          <p className={`text-xs ${isDark ? 'text-[#929C95]' : 'text-slate-600'}`}>
+            Central Insecticides Board & Registration Committee (Govt. of India) approved fungicides, dosages, and PHI waiting periods.
+          </p>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportJSON}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+              isDark
+                ? 'bg-[#151E19] border-[#1F2E25] text-[#929C95] hover:text-[#F5F7F5]'
+                : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 shadow-sm'
+            }`}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`p-4 rounded-2xl border ${
+          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+            Registered Classes
+          </div>
+          <div className="text-2xl font-bold font-mono text-emerald-400">
+            {registryData.length}
+          </div>
+          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>
+            Covers 100% of PlantVillage taxonomy
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border ${
+          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+            Crops Monitored
+          </div>
+          <div className="text-2xl font-bold font-mono text-emerald-400">
+            {cropList.length - 1}
+          </div>
+          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>
+            Solanaceae, Rosaceae, Vitaceae, Poaceae
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border ${
+          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+            Average PHI Interval
+          </div>
+          <div className="text-2xl font-bold font-mono text-amber-400">
+            7.4 Days
+          </div>
+          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>
+            Mandatory harvest safety delay
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border ${
+          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+        }`}>
+          <div className={`text-xs font-mono mb-1 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+            Bio Alternatives
+          </div>
+          <div className="text-2xl font-bold font-mono text-emerald-400">
+            100%
+          </div>
+          <div className={`text-[10px] mt-1 ${isDark ? 'text-[#5C6660]' : 'text-slate-400'}`}>
+            Organic IPM solutions mapped for all
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className={`p-4 rounded-2xl border space-y-3 ${
+        isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+      }`}>
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 ${
+              isDark ? 'text-[#929C95]' : 'text-slate-400'
+            }`} />
+            <inpu
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by crop, disease, pathogen, chemical active (e.g. Metalaxyl, Mancozeb)..."
+              className={`w-full pl-10 pr-4 py-2 rounded-xl text-xs border outline-none transition ${
+                isDark
+                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] placeholder-[#5C6660] focus:border-emerald-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500'
+              }`}
+            />
+          </div>
+
+          {/* Crop Selector */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+              Crop:
+            </span>
+            <selec
+              value={selectedCrop}
+              onChange={(e) => setSelectedCrop(e.target.value)}
+              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${
+                isDark
+                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'
+              }`}
+            >
+              {cropList.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Pathogen Type Selector */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+              Pathogen:
+            </span>
+            <selec
+              value={selectedPathogen}
+              onChange={(e) => setSelectedPathogen(e.target.value)}
+              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${
+                isDark
+                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'
+              }`}
+            >
+              {pathogenList.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* PHI Filter */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className={`text-[11px] font-mono shrink-0 ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+              PHI:
+            </span>
+            <selec
+              value={selectedPhi}
+              onChange={(e) => setSelectedPhi(e.target.value)}
+              className={`text-xs font-medium rounded-xl px-3 py-2 border outline-none transition ${
+                isDark
+                  ? 'bg-[#101713] border-[#1F2E25] text-[#F5F7F5] focus:border-emerald-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-emerald-500'
+              }`}
+            >
+              <option value="All">All Intervals</option>
+              <option value="0">0 Days (Healthy / Safe)</option>
+              <option value="1-7">1 - 7 Days</option>
+              <option value="8+">&gt; 7 Days</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Quick Result Counter */}
+        <div className={`flex items-center justify-between text-[11px] font-mono pt-2 border-t ${
+          isDark ? 'border-[#1F2E25] text-[#929C95]' : 'border-slate-200 text-slate-500'
+        }`}>
+          <span>Showing {filteredEntries.length} of {registryData.length} statutory records</span>
+          {(searchQuery || selectedCrop !== 'All' || selectedPathogen !== 'All' || selectedPhi !== 'All') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCrop('All');
+                setSelectedPathogen('All');
+                setSelectedPhi('All');
+              }}
+              className="text-emerald-500 hover:underline"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Grid of Pesticide Cards */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-xs font-mono text-[#929C95]">Loading CIB&RC Master Pesticide Database...</p>
+        </div>
+      ) : filteredEntries.length === 0 ? (
+        <div className={`p-12 text-center rounded-2xl border ${
+          isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200'
+        }`}>
+          <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold mb-1">No matching pesticide regulations found</h3>
+          <p className={`text-xs max-w-md mx-auto ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+            Try adjusting your search keyword or clearing the crop and pathogen filters.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEntries.map((item) => {
+            const isHealthy = item.condition === 'Healthy' || item.is_healthy;
+            const pathogenColor = {
+              'Fungus': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+              'Oomycete': 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+              'Bacterium': 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+              'Virus': 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+              'None': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+            }[item.pathogen_type] || 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+
+            return (
+              <div
+                key={item.disease_class}
+                className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-200 hover:border-emerald-500/40 group ${
+                  isDark ? 'bg-[#151E19] border-[#1F2E25]' : 'bg-white border-slate-200 shadow-sm'
+                }`}
+              >
+                <div>
+                  {/* Top Badge Row */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-bold text-emerald-400 tracking-wide">
+                      {item.crop}
+                    </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${pathogenColor}`}>
+                      {item.pathogen_type || 'Unknown'}
+                    </span>
+                  </div>
+
+                  {/* Disease Condition */}
+                  <h3 className="text-base font-bold tracking-tight mb-1">
+                    {item.condition}
+                  </h3>
+
+                  {/* Causal Microbe */}
+                  <div className="flex items-center gap-1.5 text-xs mb-4">
+                    <span className={`text-[11px] font-mono ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+                      Pathogen:
+                    </span>
+                    <span className="font-semibold italic text-emerald-400 truncate">
+                      {item.causal_microbe}
+                    </span>
+                  </div>
+
+                  {/* Approved Chemical Formulations */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${
+                        isDark ? 'text-[#929C95]' : 'text-slate-500'
+                      }`}>
+                        CIB&RC Formulations
+                      </span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                        isDark ? 'bg-[#101713] text-[#929C95]' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {item.cibrc_approved_pesticides?.length || 0} approved
+                      </span>
+                    </div>
+
+                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      {isHealthy ? (
+                        <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs py-1">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>No chemical treatment required</span>
+                        </div>
+                      ) : item.cibrc_approved_pesticides && item.cibrc_approved_pesticides.length > 0 ? (
+                        item.cibrc_approved_pesticides.slice(0, 3).map((chem, idx) => (
+                          <div key={idx} className="flex items-start gap-1.5 text-[11px]">
+                            <span className="text-emerald-500 shrink-0 font-bold">•</span>
+                            <span className="leading-snug">{chem}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-[#929C95]">Pending formal registration schedule</span>
+                      )}
+
+                      {!isHealthy && item.cibrc_approved_pesticides?.length > 3 && (
+                        <div className="text-[10px] font-mono text-emerald-500/80 pt-1">
+                          + {item.cibrc_approved_pesticides.length - 3} more registered formulations
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dosage & PHI Pill */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className={`p-2.5 rounded-xl border ${
+                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <span className={`text-[9px] uppercase font-mono block ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+                        Dosage Rate
+                      </span>
+                      <span className="text-xs font-semibold leading-tight line-clamp-1">
+                        {item.recommended_dosage}
+                      </span>
+                    </div>
+
+                    <div className={`p-2.5 rounded-xl border ${
+                      isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <span className={`text-[9px] uppercase font-mono block ${isDark ? 'text-[#929C95]' : 'text-slate-500'}`}>
+                        Harvest PHI
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-amber-400">
+                          {item.phi_waiting_period_days} Days
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio Alternative */}
+                  <div className="mb-4">
+                    <span className={`text-[10px] uppercase font-mono block mb-1 font-semibold ${
+                      isDark ? 'text-[#929C95]' : 'text-slate-500'
+                    }`}>
+                      Bio / Organic Alternative
+                    </span>
+                    <p className={`text-xs italic line-clamp-2 ${isDark ? 'text-[#929C95]' : 'text-slate-600'}`}>
+                      {item.bio_alternative || "Maintain balanced nutrition and soil organic matter."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className={`pt-3 border-t flex items-center justify-between gap-2 ${
+                  isDark ? 'border-[#1F2E25]' : 'border-slate-200'
+                }`}>
+                  <button
+                    onClick={() => handleCopyAdvisory(item)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
+                      isDark
+                        ? 'border-[#1F2E25] hover:bg-[#101713] text-[#929C95] hover:text-[#F5F7F5]'
+                        : 'border-slate-200 hover:bg-slate-100 text-slate-600'
+                    }`}
+                    title="Copy full regulatory advisory"
+                  >
+                    {copiedClass === item.disease_class ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400 text-[10px]">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span className="text-[10px]">Copy</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSelectedEntryModal(item)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
+                        isDark
+                          ? 'border-[#1F2E25] hover:bg-[#101713] text-[#929C95] hover:text-[#F5F7F5]'
+                          : 'border-slate-200 hover:bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      Details
+                    </button>
+
+                    {onSelectForAssistant && (
+                      <button
+                        onClick={() => onSelectForAssistant(item)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition"
+                        title="Open in Agronomy Assistant"
+                      >
+                        <Bot className="w-3 h-3" />
+                        <span className="text-[10px]">Ask AI</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedEntryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-2xl rounded-2xl border p-6 max-h-[90vh] overflow-y-auto space-y-4 ${
+            isDark ? 'bg-[#151E19] border-[#1F2E25] text-[#F5F7F5]' : 'bg-white border-slate-200 text-slate-900 shadow-2xl'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs font-mono uppercase text-emerald-500 font-semibold tracking-wider">
+                  CIB&RC Registered Schedule Details
+                </span>
+                <h3 className="text-xl font-bold mt-1">
+                  {selectedEntryModal.crop} — {selectedEntryModal.condition}
+                </h3>
+                <p className="text-xs italic text-emerald-400 font-mono mt-0.5">
+                  {selectedEntryModal.causal_microbe} ({selectedEntryModal.pathogen_type})
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedEntryModal(null)}
+                className={`p-1.5 rounded-lg border text-xs ${
+                  isDark ? 'border-[#1F2E25] text-[#929C95] hover:text-white' : 'border-slate-200 text-slate-500'
+                }`}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Details */}
+            <div className="space-y-4 text-xs pt-2">
+              <div>
+                <h4 className="font-semibold text-emerald-400 mb-1.5 uppercase font-mono text-[10px]">
+                  Approved Chemical Formulations:
+                </h4>
+                <ul className={`list-disc pl-5 space-y-1 p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {selectedEntryModal.cibrc_approved_pesticides?.map((chem, idx) => (
+                    <li key={idx} className="leading-relaxed">{chem}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className="text-[10px] font-mono uppercase block text-[#929C95]">Dosage & Dilution:</span>
+                  <span className="font-semibold text-xs mt-1 block">{selectedEntryModal.recommended_dosage}</span>
+                </div>
+
+                <div className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className="text-[10px] font-mono uppercase block text-[#929C95]">Pre-Harvest Interval (PHI):</span>
+                  <span className="font-bold text-amber-400 text-xs mt-1 block">
+                    {selectedEntryModal.phi_waiting_period_days} Days Mandatory Waiting Period
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">
+                  Symptoms & Diagnostics:
+                </h4>
+                <p className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {selectedEntryModal.symptoms}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">
+                  Spread Mechanism:
+                </h4>
+                <p className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {selectedEntryModal.spread_mechanism}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-emerald-400 mb-1 uppercase font-mono text-[10px]">
+                  Biological / Non-Chemical Alternative:
+                </h4>
+                <p className={`p-3 rounded-xl border ${
+                  isDark ? 'bg-[#101713] border-[#1F2E25]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {selectedEntryModal.bio_alternative}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-amber-400 mb-1 uppercase font-mono text-[10px]">
+                  Safety Precautions & PPE:
+                </h4>
+                <p className={`p-3 rounded-xl border text-amber-300/90 ${
+                  isDark ? 'bg-amber-950/20 border-amber-800/40' : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}>
+                  {selectedEntryModal.safety_precautions}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t flex justify-end gap-2">
+              <button
+                onClick={() => setSelectedEntryModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
